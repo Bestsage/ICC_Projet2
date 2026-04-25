@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🐰✨ Bix Puzzle — ICC-C 2025-2026
+# Bix Puzzle — ICC-C 2025-2026
 
 <p>
   <img src="https://img.shields.io/badge/EPFL-ICC--C-red?style=for-the-badge" alt="EPFL ICC-C">
@@ -14,7 +14,7 @@ _Un mini-jeu de puzzle en console où Bix pousse des blocs, évite les trous, et
 
 ---
 
-## 🎮 Aperçu rapide
+## Aperçu rapide
 
 > **Objectif :** atteindre la case `!` (goal) avec Bix (`@`) en manipulant intelligemment les blocs.
 
@@ -34,27 +34,27 @@ _Un mini-jeu de puzzle en console où Bix pousse des blocs, évite les trous, et
 
 | Touche | Action |
 |:--:|---|
-| `e` | Nord ⬆️ |
-| `d` | Sud ⬇️ |
-| `s` | Ouest ⬅️ |
-| `f` | Est ➡️ |
+| `e` | Nord ⬆ |
+| `d` | Sud ⬇ |
+| `s` | Ouest ⬅ |
+| `f` | Est  |
 | `r` | Reset de la partie |
 | `x` | Abandon / quitter |
 
 ---
 
-## 🧠 Règles du jeu
+## Règles du jeu
 
 - Bix se déplace sur les **cases libres** (sol, trous, goal).
 - Si une case voisine contient un bloc déplaçable (`*` ou `+`) et que la case derrière est libre, Bix pousse le bloc.
 - Un bloc poussé dans un trou disparaît.
 - Un bloc `+` devient fixe après un déplacement (s’il ne tombe pas dans un trou).
 - Si Bix tombe dans un trou, la carte est réinitialisée.
-- Si Bix atteint le goal : **victoire** 🎉
+- Si Bix atteint le goal : **victoire** 
 
 ---
 
-## 🗺️ Format des fichiers de carte
+##  Format des fichiers de carte
 
 ```txt
 W H
@@ -72,7 +72,7 @@ posx posy
 
 ---
 
-## 🚀 Compilation & exécution
+##  Compilation & exécution
 
 ### Compiler
 
@@ -92,7 +92,7 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 ---
 
-## 📁 Structure du repo
+##  Structure du repo
 
 ```txt
 .
@@ -109,7 +109,7 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 ---
 
-## 🔬 Conseils qualité (ICC)
+##  Conseils qualité (ICC)
 
 - Compiler fréquemment avec `-Wall -Wextra`.
 - Tester avec sanitizers (`address`, `undefined`).
@@ -118,7 +118,7 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 ---
 
-## ⚖️ Cadre académique
+##  Cadre académique
 
 > Projet **individuel** (section GM, avril 2026).  
 > Respecter strictement les consignes de rendu, d’anonymat et d’intégrité académique.
@@ -127,7 +127,7 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 <div align="center">
 
-### 🌟 _Push, Think, Solve._
+###  _Push, Think, Solve._
 
 **Bix compte sur toi.**
 
