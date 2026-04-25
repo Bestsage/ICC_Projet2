@@ -118,8 +118,6 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 <div align="center">
 
-###  _Push, Think, Solve._
-
 **Bix compte sur toi.**
 
 </div>
