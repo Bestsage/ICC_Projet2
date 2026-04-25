@@ -312,7 +312,58 @@ void reset(game_t *jeu, const rawmap_t *rawmap) {
 //
 
 
+void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t *rawmap) {
+    
+  int dx = 0, dy = 0;
 
+  // Définir le vecteur de direction comme minecraft
+  switch (cmd) {
+      case 'w': dy = -1; break; // Nord
+      case 's': dy = 1;  break; // Sud
+      case 'a': dx = -1; break; // Ouest
+      case 'd': dx = 1;  break; // Est
+      case 'r': reset(jeu, rawmap); break; // touche reset
+      default: return; // Touche ignorée
+  }
+
+  // on choppe ou se situe la case suivante de bix (cible) et son type
+  int cx = jeu->bix_x + dx;
+  int cy = jeu->bix_y + dy;
+
+  cell_type_t cible = jeu->cells[cy][cx];
+
+  // au cas ou bix pousse un objet il nous faux la cell encore d'après
+  
+  int px = cx + dx;
+  int py = cy + dy;
+
+  cell_type_t potentielle = jeu->cells[py][px];
+  
+
+  // booléin pour verifier si on est dedans l'espace de jeu
+  if (cx < 0 || cx >= jeu->width || cy < 0 || cy >= jeu->height) {
+    return; // On annule le mouvement 
+  } 
+
+  // déplacement simple :
+  if (cible == CELL_SOL || cible == CELL_GOAL || cible == CELL_TROU) {
+      bix
+      // Bouger Bix sur (cx, cy)
+      // si Bix tombe dans le trou (*doit_reset = true)
+      // end game si bix a gagné (cx, cy) == (goal_x, goal_y)
+  } 
+  else if (cible == CELL_BLOC_DEP || cible == CELL_BLOC_UNE_FOIS) {
+      // pousser le bloc 
+      //(px, py) est en dehors de la carte -> si oui, return.
+      // 
+      //    Si c'est libre (SOL, GOAL, TROU) :
+      //    a. Déplacer le bloc sur (px, py)
+      //    b. Gérer sa transformation (si c'était un BLOC_UNE_FOIS) ou sa destruction (si TROU)
+      //    c. Avancer Bix sur (cx, cy)
+      //    d. Gérer la restauration du Goal pour l'ancienne case du bloc
+  }
+  // Si c'est un CELL_BLOC_FIXE, on ne fait rien (bloqué)
+}
 
 
 
