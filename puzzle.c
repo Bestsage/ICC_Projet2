@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <memory.h>
+#include <string.h>
+#include <stdint.h>
 
 // --- NE PAS MODIFIER A PARTIR D'ICI ---
 
@@ -77,7 +79,7 @@ void error_bad_map_file(FILE *f, char **lines, size_t line_count, size_t line_no
 /* Lit le contenu d'un fichier de carte de manière "brute".
  * Si un argument a été donné au programme (avec `./puzzle <fichier-carte.txt>`)
  * alors c'est le fichier <fichier-carte.txt> qui est lu. Sinon, par défaut
- * c'est le fichier `default-map.txt` qui est lu (très utile si vous devez
+ * c'est le fichier `default-map.txt`map qui est lu (très utile si vous devez
  * déboguer votre programme, car c'est ce fichier qui sera alors lu).
  *
  * Le résultat est une `rawmap_t`. Voir sa documentation pour le contenu. Il
@@ -104,29 +106,9 @@ rawmap_t read_map_file(const char *file_name) {
   if (fscanf(map_file, "%d %d", &map.posx, &map.posy) < 2)
     error_bad_map_file(map_file, NULL, 0, 2);
 
-  size_t line_buf_len = map.width + 2; // 1 for \n and 1 for \0
-  char line[line_buf_len];
-  memset(line, 0, line_buf_len); // just in case any of the fgets fails
-
-  // Throw away the rest of the line after the second fscanf
-  if (fgets(line, line_buf_len, map_file) == NULL)
-    error_bad_map_file(map_file, NULL, 0, 2);
-
   // Allocate the array of line strings
   map.map_lines = (char **) calloc(map.height, sizeof(char *));
-u sol ;
 
-•
- 
-un bloc fixe ;
-
-•
- 
-un bloc déplaçable ;
-
-•
- 
-un bloc déplaçable une seule fois ;
   // Read map.height lines
   for (size_t line_index = 0; line_index < map.height; line_index++) {
     if (fgets(line, line_buf_len, map_file) == NULL)
@@ -141,7 +123,9 @@ un bloc déplaçable une seule fois ;
   fclose(map_file);
 
   return map;
+
 }
+
 
 void free_rawmap(rawmap_t *map) {
   for (size_t i = 0; i < map->height; i++)
@@ -153,7 +137,7 @@ void free_rawmap(rawmap_t *map) {
 
 
 
-
+//----------------------------------------------------------------------------//
 
 
 
@@ -183,11 +167,146 @@ rawmap_t make_default_rawmap() {
   return make_rawmap(10, 10, 1, 1, lines);
 }
 
+
+
+/// on va utiliser une matrice d'uint8_t pour représenter la carte dans notre 
+// programme, avec les valeurs suivantes :
+/// 0 : sol
+/// 1 : bloc fixe
+/// 2 : bloc déplaçable
+/// 3 : bloc déplaçable une seule fois
+/// 4 : position de Bix 
+
+typedef struct {
+    uint8_t **cells; // matrice
+    size_t width; // largeur
+    size_t height; //hauteur
+    int bix_x; // position x de bix
+    int bix_y; // position y de bix
+} game_t;
+
+// on utilise un enum pour représenter les différents types de cellules possibles.
+// ça evite de se rappeler que 0 c'est le sol, 1 c'est un bloc, etc ... 
+
+typedef enum {
+    CELL_SOL = 0,
+    CELL_BLOC_FIXE = 1,
+    CELL_BLOC_DEP = 2,
+    CELL_BLOC_UNE_FOIS = 3,
+    CELL_TROU = 4,
+    CELL_GOAL = 5
+} cell_type_t;
+
+// pour créer la struct map_t je vais lire en boucles imbriquées la matrice de caractüre rawmap_t
+
+
+game_t create_game(const rawmap_t *rawmap){
+  
+  game_t jeu;
+
+  // on prend les mesures du terrain
+
+  jeu.width = rawmap->width;
+  jeu.height = rawmap->height;
+  jeu.bix_x = rawmap->posx;
+  jeu.bix_y = rawmap->posy;
+
+  // on se garde uin espace en memoire
+
+  jeu.cells = (uint8_t *)malloc(jeu.width * sizeof(uint8_t *));
+  if (jeu.cells == NULL){
+    printf("erreur de memoire pendant le traitement de la grille");
+    exit(1);
+  }
+
+
+  // création de la map
+  for (size_t y = 0; y < jeu.height; y++){
+
+    // on se garde de la memoire
+
+    jeu.cells[y] = (uint8_t *)malloc(jeu.width * sizeof(uint8_t));
+    if (jeu.cells[y] = NULL) {
+      printf("erreur de memoire pendant le traitement de la ligne %zu \n", y);
+      exit(1);
+    }
+
+    // on veut svoir combien de caractüres sont vraiment dans la str
+
+    size_t length_line = strlen(map.map_lines[y]);
+    
+    for (size_t x = 0; x < map.width; x++){
+
+      // si la ligne est pas assez longue, on ajoute du sol pour eviter les problèmes de map non finie
+
+      if (x >= length_line) {
+
+        jeu->cell[y][x] = CELL_SOL;
+        continue;
+
+      }
+
+      // on récupüre le caractère  
+      char c = map.map_lines [y][x];
+      switch (c) {
+        case 'X':
+        case 'x':
+          jeu.cells[y][x] = CELL_BLOC_FIXE;
+          break;
+        case '*':
+          jeu.cells[y][x] = CELL_BLOC_DEP;
+          break;
+        case '+':
+          jeu.cells[y][x] = CELL_BLOC_UNE_FOIS;
+          break;
+        case 'o':
+          jeu.cells[y][x] = CELL_TROU;
+          break;
+        case '!':
+          jeu.cells[y][x] = CELL_GOAL;
+          break;
+        case ' ':
+        default: // c'est un peu redondant avec la verification de la longuer de la ligne mais il prend plus de cas spéciaux
+          jeu.cells[y][x] = CELL_SOL;
+          break;
+      }
+    }
+  }
+  return jeu;
+}
+
+void free_game(game_t *jeu) { // libérer les allocations du jeu
+  if (jeu->cells != NULL) {
+
+    // on libère les lignes d'abord
+
+    for (size_t y = 0; y < jeu->height; y++) {
+      free(jeu->cells[y]);
+    }
+  
+    // puis les pointeurs 
+
+
+    free(jeu->cells);
+    jeu->cells = NULL;
+  }
+}
+
+
+
 int main(int argc, char **argv) {
   // Choisir la carte par défaut, ou celle donnée en argument du programme
   rawmap_t rawmap = argc < 2 ? make_default_rawmap() : read_map_file(argv[1]);
 
-  // Ici, votre programme
+  // créer le jeu
+  game_t jeu = create_game(&rawmap);
+
+
+
+
+  // libérer le jeu
+
+  free_game (jeu);
 
   // Ne pas oublier de libérer la carte brute.
   free_rawmap(&rawmap);
