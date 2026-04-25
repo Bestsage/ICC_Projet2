@@ -183,6 +183,10 @@ typedef struct {
     size_t height; //hauteur
     int bix_x; // position x de bix
     int bix_y; // position y de bix
+    int goal_x; 
+    int goal_y; // le goal ne bouge jamais ! et il est unique 
+    // on le stoque juste et on regarde si on dois le montrer
+
 } game_t;
 
 // on utilise un enum pour représenter les différents types de cellules possibles.
@@ -197,8 +201,7 @@ typedef enum {
     CELL_GOAL = 5
 } cell_type_t;
 
-// pour créer la struct map_t je vais lire en boucles imbriquées la matrice de caractüre rawmap_t
-
+// fonction pour créer l'espace de jeu
 
 game_t create_game(const rawmap_t *rawmap){
   
@@ -241,7 +244,7 @@ game_t create_game(const rawmap_t *rawmap){
 
       if (x >= length_line) {
 
-        jeu->cell[y][x] = CELL_SOL;
+        jeu->cells[y][x] = CELL_SOL;
         continue;
 
       }
@@ -264,6 +267,8 @@ game_t create_game(const rawmap_t *rawmap){
           break;
         case '!':
           jeu.cells[y][x] = CELL_GOAL;
+          jeu.goal_x = x;
+          jeu.goal_y = y;
           break;
         case ' ':
         default: // c'est un peu redondant avec la verification de la longuer de la ligne mais il prend plus de cas spéciaux
@@ -292,6 +297,24 @@ void free_game(game_t *jeu) { // libérer les allocations du jeu
   }
 }
 
+void reset(game_t *jeu, const rawmap_t *rawmap) {
+  free_game(jeu); //on libère l'espace de l'ancienne tentative 
+  *jeu = create_game(rawmap); // on refais un espace de jeu
+}
+
+//
+//
+//---------------------------------------------------------------------------//
+// 
+//
+// maintenant qu'on peut creer un espace a bix, il faut le bouger
+//
+//
+
+
+
+
+
 
 
 int main(int argc, char **argv) {
@@ -300,13 +323,14 @@ int main(int argc, char **argv) {
 
   // créer le jeu
   game_t jeu = create_game(&rawmap);
-
+  // faudrait detup le point de reset ? 
+  
 
 
 
   // libérer le jeu
 
-  free_game (jeu);
+  free_game (&jeu);
 
   // Ne pas oublier de libérer la carte brute.
   free_rawmap(&rawmap);
