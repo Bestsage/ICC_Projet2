@@ -109,19 +109,10 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 ---
 
-##  Conseils qualité (ICC)
-
-- Compiler fréquemment avec `-Wall -Wextra`.
-- Tester avec sanitizers (`address`, `undefined`).
-- Garder un code lisible, indenté, factorisé.
-- Préparer des tests unitaires via des cartes simples et ciblées.
-
----
-
 ##  Cadre académique
 
 > Projet **individuel** (section GM, avril 2026).  
-> Respecter strictement les consignes de rendu, d’anonymat et d’intégrité académique.
+> Respecter le mischage du code
 
 ---
 
