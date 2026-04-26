@@ -79,7 +79,7 @@ void error_bad_map_file(FILE *f, char **lines, size_t line_count, size_t line_no
 /* Lit le contenu d'un fichier de carte de manière "brute".
  * Si un argument a été donné au programme (avec `./puzzle <fichier-carte.txt>`)
  * alors c'est le fichier <fichier-carte.txt> qui est lu. Sinon, par défaut
- * c'est le fichier `default-map.txt`map qui est lu (très utile si vous devez
+ * c'est le fichier `default-map.txt` qui est lu (très utile si vous devez
  * déboguer votre programme, car c'est ce fichier qui sera alors lu).
  *
  * Le résultat est une `rawmap_t`. Voir sa documentation pour le contenu. Il
@@ -106,6 +106,14 @@ rawmap_t read_map_file(const char *file_name) {
   if (fscanf(map_file, "%d %d", &map.posx, &map.posy) < 2)
     error_bad_map_file(map_file, NULL, 0, 2);
 
+  size_t line_buf_len = map.width + 2; // 1 for \n and 1 for \0
+  char line[line_buf_len];
+  memset(line, 0, line_buf_len); // just in case any of the fgets fails
+
+  // Throw away the rest of the line after the second fscanf
+  if (fgets(line, line_buf_len, map_file) == NULL)
+    error_bad_map_file(map_file, NULL, 0, 2);
+
   // Allocate the array of line strings
   map.map_lines = (char **) calloc(map.height, sizeof(char *));
 
@@ -123,9 +131,7 @@ rawmap_t read_map_file(const char *file_name) {
   fclose(map_file);
 
   return map;
-
 }
-
 
 void free_rawmap(rawmap_t *map) {
   for (size_t i = 0; i < map->height; i++)
@@ -277,7 +283,7 @@ game_t create_game(const rawmap_t *rawmap){
       }
 
       // on récupüre le caractère  
-      char c = map.map_lines [y][x];
+      char c = rawmap->map_lines[y][x];
       switch (c) {
         case 'X':
         case 'x':
@@ -473,6 +479,18 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
     // Si c'est un CELL_BLOC_FIXE, on n'a rien fait
   }
 }
+
+//
+//
+//
+//
+// faut maintenant créer un moteur de rendu tui utf 8 poiur render le jeu a chaque nouvelle frame
+//
+//
+//
+//
+
+
 
 
 
