@@ -411,8 +411,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
       case 'd': dy = 1;  break; // Sud
       case 's': dx = -1; break; // Ouest
       case 'f': dx = 1;  break; // Est
-      case 'r': reset(jeu); break; // touche reset
-      case 'x': exit(0); // Abandon
+      case 'r': *doit_reset = true; break; // touche reset
       default: return; // Touche ignorée
   }
 
@@ -442,7 +441,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
       if (cible == CELL_GOAL){
         //  clear et beau screen de fin 
         printf("Bravo vous avez gagnié!");
-        exit(0); // on termine le programme sans erreur
+         // on termine le programme sans erreur
       }
       if (cible == CELL_TROU){
         // screen de game over plus beau que ça
@@ -468,7 +467,6 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
         if(cx == jeu->goal_x && cy == jeu->goal_y){
           // victoire, bix a trouvé le goal sous un bloc
           printf("victoire, tu a déniché le goal");
-          exit(0);
         }
         // vu   u'on a poussé le bloc, on met du sol dessous, 
         //et pas besoin d'afficher le goal vu qu'on aurait déja gagné
@@ -490,8 +488,48 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
 //
 //
 
+void print_game(const game_t *jeu){
 
-
+  // a chaque frame, en efface l'ancienne map 
+  printf("\033[2J\033[H");
+  // titre
+  printf("\033[1;35m=== LE PUZZLE DE BIX ===\033[0m\n\n");
+  for (size_t y = 0; y < jeu->height; y++){
+    for (size_t x; x < jeu->width; x++){
+      // faut que si c'est la case de bix, on le mette
+      if(x == jeu->bix_x && y == jeu->bix_y){
+        printf("\033[1;33m@\033[0m");
+        // bix en jaune fluo
+      }
+      else{
+        switch (jeu->cells[y][x]) {
+          case CELL_BLOC_FIXE: 
+            printf("\033[1;30mX\033[0m"); // Gris foncé
+            break;
+          case CELL_BLOC_DEP: 
+            printf("\033[1;34m*\033[0m"); // Bleu
+            break;
+          case CELL_BLOC_UNE_FOIS: 
+            printf("\033[1;36m+\033[0m"); // Cyan
+            break;
+          case CELL_TROU: 
+            printf("\033[1;31m0\033[0m"); // Rouge (Attention, c'est le chiffre zéro !)
+            break;
+          case CELL_GOAL: 
+            printf("\033[1;32m!\033[0m"); // Vert fluo
+            break;
+          case CELL_SOL:
+          default: 
+            printf(" "); // Espace vide classique
+            break;
+        }
+      }
+    }
+    // retour a la ligne suivante
+    printf("\n");
+  }
+  printf("\n"); // espace avant la commande
+}
 
 
 int main(int argc, char **argv) {
@@ -502,8 +540,18 @@ int main(int argc, char **argv) {
   game_t jeu = create_game(&rawmap); 
   
 
-  // mainloop avant la victoire
+  // pour l'input du prof ( max 100 input)
+  char input[100];
 
+  // mainloop avant la victoire
+  bool game_on = true;
+
+  while (game_on){
+
+    
+    
+  }
+  
   // libérer le jeu
 
   free_game (&jeu);
