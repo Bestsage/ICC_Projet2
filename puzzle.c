@@ -561,26 +561,24 @@ int main(int argc, char **argv) {
         reset(&jeu);
         break;
       }
-      else if (cmd == 'e' || cmd == 'd' || cmd == 's' || cmd == 'f') { [cite: 33]
+      else if (cmd == 'e' || cmd == 'd' || cmd == 's' || cmd == 'f') {
         
         bool doit_reset = false;
                 
-        // On applique la touche [cite: 121]
-                appliquer_commande(&jeu, cmd, &doit_reset, &rawmap);
+        // on donne la touche a la fonction de mouvement
+        appliquer_commande(&jeu, cmd, doit_reset, &rawmap);
 
-                // Si Bix est tombé dans un trou, appliquer_commande a mis doit_reset à true
-                if (doit_reset) {
-                    reset(&jeu);
-                    afficher_jeu(&jeu);
-                    break; // On annule les touches suivantes car on a reset
-                }
+        // Si le reset est trigger pour nuimporte quelle raison
+        if (doit_reset) {
+          reset(&jeu);
+          break; // On annule les touches suivantes car on a reset
+        }
 
-                // On affiche le nouvel état après ce mouvement [cite: 122]
-                afficher_jeu(&jeu);
+        // On affiche le nouvel état après ce mouvement [cite: 122]
+        afficher_jeu(&jeu);
 
-        // dans le cas ou bix ets 
+        // dans le cas ou bix est arrivé au goal
         if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
-          printf("\033[1;32mBravo! Tu as atteint le goal!\033[0m\n"); [cite: 124]
           game_on = false; // Fin de partie ! [cite: 123]
           break;
       }
