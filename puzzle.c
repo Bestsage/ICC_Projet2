@@ -574,12 +574,12 @@ int main(int argc, char **argv) {
           break; // On annule les touches suivantes car on a reset
         }
 
-        // On affiche le nouvel état après ce mouvement [cite: 122]
+        // On réaffiche l'état
         afficher_jeu(&jeu);
 
-        // dans le cas ou bix est arrivé au goal
+        // dans le cas ou bix est arrivé au goal on aura deja le texte mais il faut quiter la boucle
         if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
-          game_on = false; // Fin de partie ! [cite: 123]
+          game_on = false; // Fin de partie !
           break;
       }
     }
