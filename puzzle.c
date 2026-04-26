@@ -338,6 +338,7 @@ void reset(game_t *jeu) {
   const rawmap_t *backup = jeu->origin; // on choppe la map de base 
   free_game(jeu); //on libère l'espace de l'ancienne tentative 
   *jeu = create_game(backup); // on refais un espace de jeu
+  print_game(&jeu);
 }
 
 // juste pour verifier si une position appartient à l'espace de jeu
@@ -411,7 +412,6 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
       case 'd': dy = 1;  break; // Sud
       case 's': dx = -1; break; // Ouest
       case 'f': dx = 1;  break; // Est
-      case 'r': *doit_reset = true; break; // touche reset
       default: return; // Touche ignorée
   }
 
@@ -547,9 +547,44 @@ int main(int argc, char **argv) {
   bool game_on = true;
 
   while (game_on){
+    // on parcoure les caractères un par uns
+    for (int i = 0; input[i] != '\0' && input[i] != '\n'; i++) {
+      
+      char cmd = input[i];
 
-    
-    
+      if(cmd == 'x'){
+        printf("Abandon");
+        game_on = false; // on sortira du jeu
+        break; // et on arrète de lire la boucle
+      }
+      else if (cmd == 'r'){
+        reset(&jeu);
+        break;
+      }
+      else if (cmd == 'e' || cmd == 'd' || cmd == 's' || cmd == 'f') { [cite: 33]
+        
+        bool doit_reset = false;
+                
+        // On applique la touche [cite: 121]
+                appliquer_commande(&jeu, cmd, &doit_reset, &rawmap);
+
+                // Si Bix est tombé dans un trou, appliquer_commande a mis doit_reset à true
+                if (doit_reset) {
+                    reset(&jeu);
+                    afficher_jeu(&jeu);
+                    break; // On annule les touches suivantes car on a reset
+                }
+
+                // On affiche le nouvel état après ce mouvement [cite: 122]
+                afficher_jeu(&jeu);
+
+        // dans le cas ou bix ets 
+        if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
+          printf("\033[1;32mBravo! Tu as atteint le goal!\033[0m\n"); [cite: 124]
+          game_on = false; // Fin de partie ! [cite: 123]
+          break;
+      }
+    }
   }
   
   // libérer le jeu
