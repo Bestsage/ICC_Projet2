@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 
+
 // --- NE PAS MODIFIER A PARTIR D'ICI ---
 
 /* Structure pour le contenu "brut" lu depuis le fichier de carte.
@@ -332,6 +333,8 @@ void free_game(game_t *jeu) { // libérer les allocations du jeu
 }
 
 
+void print_game(const game_t *jeu); // On annonce que la fonction existe
+//                                     car reset est ecris avant elle
 
 
 void reset(game_t *jeu) {
@@ -402,7 +405,7 @@ bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){
 //
 
 
-void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t *rawmap) {
+void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
     
   int dx = 0, dy = 0;
 
@@ -482,8 +485,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
 //
 //
 //
-// faut maintenant créer un moteur de rendu tui utf 8 poiur render le jeu a chaque nouvelle frame
-//
+// tui 
 //
 //
 //
@@ -546,7 +548,14 @@ int main(int argc, char **argv) {
   // mainloop avant la victoire
   bool game_on = true;
 
+  print_game(&jeu); // on lance le jeu pour la première fois
+
   while (game_on){
+
+    if (fgets(input, sizeof(input), stdin) == NULL) {
+        break; //on choppe l'input et on sors
+    }
+    
     // on parcoure les caractères un par uns
     for (int i = 0; input[i] != '\0' && input[i] != '\n'; i++) {
       
@@ -566,7 +575,7 @@ int main(int argc, char **argv) {
         bool doit_reset = false;
                 
         // on donne la touche a la fonction de mouvement
-        appliquer_commande(&jeu, cmd, &doit_reset, &rawmap);
+        appliquer_commande(&jeu, cmd, &doit_reset);
 
         // Si le reset est trigger pour nuimporte quelle raison
         if (doit_reset) {
@@ -575,16 +584,16 @@ int main(int argc, char **argv) {
         }
 
         // On réaffiche l'état
-        afficher_jeu(&jeu);
+        print_game(&jeu);
 
         // dans le cas ou bix est arrivé au goal on aura deja le texte mais il faut quiter la boucle
         if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
           game_on = false; // Fin de partie !
           break;
+        }
       }
     }
   }
-  
   // libérer le jeu
 
   free_game (&jeu);
