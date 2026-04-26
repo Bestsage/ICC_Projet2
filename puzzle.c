@@ -142,6 +142,31 @@ void free_rawmap(rawmap_t *map) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* Crée la carte brute par défaut, si on ne donne pas de nom de fichier au
  * programme.
  *
@@ -185,7 +210,9 @@ typedef struct {
     int bix_y; // position y de bix
     int goal_x; 
     int goal_y; // le goal ne bouge jamais ! et il est unique 
-    // on le stoque juste et on regarde si on dois le montrer
+    // on le stoque juste et on regarde si on dois le montrer ou gagner
+
+    const rawmap_t *origin; // On stocke le "plan de base" ici
 
 } game_t;
 
@@ -198,7 +225,8 @@ typedef enum {
     CELL_BLOC_DEP = 2,
     CELL_BLOC_UNE_FOIS = 3,
     CELL_TROU = 4,
-    CELL_GOAL = 5
+    CELL_GOAL = 5,
+    CELL_BIX = 6,
 } cell_type_t;
 
 // fonction pour créer l'espace de jeu
@@ -213,7 +241,7 @@ game_t create_game(const rawmap_t *rawmap){
   jeu.height = rawmap->height;
   jeu.bix_x = rawmap->posx;
   jeu.bix_y = rawmap->posy;
-
+  jeu.origin = rawmap;
   // on se garde uin espace en memoire
 
   jeu.cells = (uint8_t *)malloc(jeu.width * sizeof(uint8_t *));
@@ -277,6 +305,7 @@ game_t create_game(const rawmap_t *rawmap){
       }
     }
   }
+  // faut poser la cell de bix sur la map encore 
   return jeu;
 }
 
@@ -297,12 +326,67 @@ void free_game(game_t *jeu) { // libérer les allocations du jeu
   }
 }
 
-void reset(game_t *jeu, const rawmap_t *rawmap) {
+
+
+
+void reset(game_t *jeu) {
+  const rawmap_t *backup = jeu->origin; // on choppe la map de base 
   free_game(jeu); //on libère l'espace de l'ancienne tentative 
-  *jeu = create_game(rawmap); // on refais un espace de jeu
+  *jeu = create_game(backup); // on refais un espace de jeu
 }
 
-//
+// juste pour verifier si une position appartient à l'espace de jeu
+static bool en_jeu(int x, int y, const game_t *jeu) {
+    // On renvoie directement le résultat de la condition logique (ET)
+    return (x >= 0 && x < jeu->width && y >= 0 && y < jeu->height);
+}
+
+bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){
+  
+  if (bloc == CELL_BLOC_UNE_FOIS){
+    if (jeu->cells[py][px] == CELL_GOAL){
+      // gameover, on a fixé un bloc sur le goal
+      printf("mec t'est null recommence");
+      printf("tu a rendu le goal inaccessible");
+      reset(jeu);
+      return (1);
+    }
+    else if (jeu->cells[py][px] == CELL_TROU){
+      // le bloc tombe dans le trou donc on ne fais rien
+      return(1);
+    }
+    else if (jeu->cells[py][px] == CELL_SOL){
+      jeu->cells[py][px] == CELL_BLOC_FIXE;
+      return(1);
+    }
+    else {
+      return(0);
+      // si le bloc en px py n'est pas un bloc libre, on a rien fait, donc return 0
+    }
+  }
+  else if (bloc == CELL_BLOC_DEP){
+    if (jeu->cells[py][px] == CELL_TROU){
+      // le bloc tombe dans le trou donc on ne fais rien
+      return(1);
+    }
+    else if (jeu->cells[py][px] == CELL_SOL || jeu->cells[py][px] == CELL_GOAL){
+      // on peut cacher le goal, c'est pas grave car la verification de victoire
+      // c'est soit un goal visible 
+      // soit le match des coordonées bix et goal
+      
+      jeu->cells[py][px] == CELL_BLOC_DEP;
+      return(1);
+    }
+    else{
+      return(0);
+      // si le bloc en px py n'est pas un bloc libre, on a rien fait, donc return 0
+    }
+  }
+  else {
+    return (0);
+    // si c'etait pas un bloc bougeable, on return 0
+  }
+}
 //
 //---------------------------------------------------------------------------//
 // 
@@ -326,13 +410,17 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
       default: return; // Touche ignorée
   }
 
-  // on choppe ou se situe la case suivante de bix (cible) et son type
+  // on choppe ou se situe la case suivante de bix (cible)
   int cx = jeu->bix_x + dx;
   int cy = jeu->bix_y + dy;
-
+  // on check si c'est ingame
+  if (!en_jeu(cx, cy, jeu)){
+    return;
+  }
+  // on chope le type de case 
   cell_type_t cible = jeu->cells[cy][cx];
-
-  // au cas ou bix pousse un objet il nous faux la cell encore d'après
+  
+  // au cas ou bix pousse un objet il nous faux la cell encore d'après (potentielle)
   
   int px = cx + dx;
   int py = cy + dy;
@@ -340,29 +428,45 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
   cell_type_t potentielle = jeu->cells[py][px];
   
 
-  // booléin pour verifier si on est dedans l'espace de jeu
-  if (cx < 0 || cx >= jeu->width || cy < 0 || cy >= jeu->height) {
-    return; // On annule le mouvement 
-  } 
-
   // déplacement simple :
   if (cible == CELL_SOL || cible == CELL_GOAL || cible == CELL_TROU) {
-      bix
-      // Bouger Bix sur (cx, cy)
-      // si Bix tombe dans le trou (*doit_reset = true)
-      // end game si bix a gagné (cx, cy) == (goal_x, goal_y)
+    
+    if (cible == CELL_SOL){
+      // juste changer la cell cible et la cell de depart
+      jeu->cells[cy][cx] = CELL_BIX;
+      jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_SOL;
+
+      // on update la position de bix
+      jeu->bix_x = cx;
+      jeu->bix_y = cy;
+
+    }
+    if (cible == CELL_GOAL){
+      //  clear et beau screen de fin 
+      printf("Bravo vous avez gagnié!");
+      exit(0); // on termine le programme sans erreur
+    }
+    if (cible == CELL_TROU){
+      // screen de game over plus beau que ça
+      printf("Mec t'est null recommence");
+      // recommencer le la partie
+      reset(jeu, rawmap);
+    }
+
   } 
+
+  // si le bloc est bougeable, verifier ce qui est après et remplacer les bonnes cases
   else if (cible == CELL_BLOC_DEP || cible == CELL_BLOC_UNE_FOIS) {
-      // pousser le bloc 
-      //(px, py) est en dehors de la carte -> si oui, return.
-      // 
-      //    Si c'est libre (SOL, GOAL, TROU) :
-      //    a. Déplacer le bloc sur (px, py)
-      //    b. Gérer sa transformation (si c'était un BLOC_UNE_FOIS) ou sa destruction (si TROU)
-      //    c. Avancer Bix sur (cx, cy)
-      //    d. Gérer la restauration du Goal pour l'ancienne case du bloc
+  
+    if (push_bloc(cible, py, px, jeu))
+    jeu->cells[cy][cx] = CELL_BIX;
+    if(cx == jeu->goal_x && cy == jeu->goal_y){
+      // victoire, bix a trouvé le goal sous un bloc
+      printf("victoire, tu a déniché le goal");
+      exit(0);
+    }   
   }
-  // Si c'est un CELL_BLOC_FIXE, on ne fait rien (bloqué)
+  // Si c'est un CELL_BLOC_FIXE, on ne fait rien
 }
 
 
@@ -373,11 +477,10 @@ int main(int argc, char **argv) {
   rawmap_t rawmap = argc < 2 ? make_default_rawmap() : read_map_file(argv[1]);
 
   // créer le jeu
-  game_t jeu = create_game(&rawmap);
-  // faudrait detup le point de reset ? 
+  game_t jeu = create_game(&rawmap); 
   
 
-
+  // mainloop avant la victoire
 
   // libérer le jeu
 
