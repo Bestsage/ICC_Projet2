@@ -338,7 +338,7 @@ void reset(game_t *jeu) {
   const rawmap_t *backup = jeu->origin; // on choppe la map de base 
   free_game(jeu); //on libère l'espace de l'ancienne tentative 
   *jeu = create_game(backup); // on refais un espace de jeu
-  print_game(&jeu);
+  print_game(jeu);
 }
 
 // juste pour verifier si une position appartient à l'espace de jeu
@@ -441,7 +441,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset, const rawmap_t 
       if (cible == CELL_GOAL){
         //  clear et beau screen de fin 
         printf("Bravo vous avez gagnié!");
-         // on termine le programme sans erreur
+        // l'arret de la boucle se fait après dans le while dans le main
       }
       if (cible == CELL_TROU){
         // screen de game over plus beau que ça
@@ -495,7 +495,7 @@ void print_game(const game_t *jeu){
   // titre
   printf("\033[1;35m=== LE PUZZLE DE BIX ===\033[0m\n\n");
   for (size_t y = 0; y < jeu->height; y++){
-    for (size_t x; x < jeu->width; x++){
+    for (size_t x = 0; x < jeu->width; x++){
       // faut que si c'est la case de bix, on le mette
       if(x == jeu->bix_x && y == jeu->bix_y){
         printf("\033[1;33m@\033[0m");
@@ -566,7 +566,7 @@ int main(int argc, char **argv) {
         bool doit_reset = false;
                 
         // on donne la touche a la fonction de mouvement
-        appliquer_commande(&jeu, cmd, doit_reset, &rawmap);
+        appliquer_commande(&jeu, cmd, &doit_reset, &rawmap);
 
         // Si le reset est trigger pour nuimporte quelle raison
         if (doit_reset) {
