@@ -232,7 +232,6 @@ typedef enum {
     CELL_BLOC_UNE_FOIS = 3,
     CELL_TROU = 4,
     CELL_GOAL = 5,
-    CELL_BIX = 6,
 } cell_type_t;
 
 // fonction pour créer l'espace de jeu
@@ -250,7 +249,7 @@ game_t create_game(const rawmap_t *rawmap){
   jeu.origin = rawmap;
   // on se garde uin espace en memoire
 
-  jeu.cells = (uint8_t **)malloc(jeu.width * sizeof(uint8_t *));
+  jeu.cells = (uint8_t **)malloc(jeu.height * sizeof(uint8_t *));
   if (jeu.cells == NULL){
     printf("erreur de memoire pendant le traitement de la grille");
     exit(1);
@@ -332,10 +331,8 @@ void free_game(game_t *jeu) { // libérer les allocations du jeu
   }
 }
 
-
 void print_game(const game_t *jeu); // On annonce que la fonction existe
-//                                     car reset est ecris avant elle
-
+//-------------------------------------car reset est ecris avant elle
 
 void reset(game_t *jeu) {
   const rawmap_t *backup = jeu->origin; // on choppe la map de base 
@@ -350,14 +347,14 @@ static bool en_jeu(int x, int y, const game_t *jeu) {
     return (x >= 0 && x < jeu->width && y >= 0 && y < jeu->height);
 }
 
-bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){
+bool push_bloc(cell_type_t bloc, int py, int px,bool *doit_reset, game_t *jeu){
   
   if (bloc == CELL_BLOC_UNE_FOIS){
     if (jeu->cells[py][px] == CELL_GOAL){
       // gameover, on a fixé un bloc sur le goal
       printf("mec t'est null recommence");
       printf("tu a rendu le goal inaccessible");
-      reset(jeu);
+      *doit_reset = true;
       return (1);
     }
     else if (jeu->cells[py][px] == CELL_TROU){
@@ -396,14 +393,6 @@ bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){
     // si c'etait pas un bloc bougeable, on return 0
   }
 }
-//
-//---------------------------------------------------------------------------//
-// 
-//
-// maintenant qu'on peut creer un espace a bix, il faut le bouger
-//
-//
-
 
 void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
     
@@ -432,9 +421,10 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
     if (cible == CELL_SOL || cible == CELL_GOAL || cible == CELL_TROU) {
       
       if (cible == CELL_SOL){
-        // juste changer la cell cible et la cell de depart
-        jeu->cells[cy][cx] = CELL_BIX;
-        jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_SOL;
+
+        //jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_SOL;
+        // commenté car bix agirait comme un gomme
+
 
         // on update la position de bix
         jeu->bix_x = cx;
@@ -444,6 +434,8 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
       if (cible == CELL_GOAL){
         //  clear et beau screen de fin 
         printf("Bravo vous avez gagnié!");
+        jeu->bix_x = cx;
+        jeu->bix_y = cy;
         // l'arret de la boucle se fait après dans le while dans le main
       }
       if (cible == CELL_TROU){
@@ -461,34 +453,28 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
       int px = cx + dx;
       int py = cy + dy;
 
-      if (push_bloc(cible, py, px, jeu)){
+      if (push_bloc(cible, py, px, doit_reset, jeu)){
         // si on a pu pousser le bloc bix prend la placxe de la cible
         jeu->bix_x = cx;
         jeu->bix_y = cy;
+        
+        jeu->cells[cx][cy] = CELL_SOL;
       
 
         if(cx == jeu->goal_x && cy == jeu->goal_y){
           // victoire, bix a trouvé le goal sous un bloc
           printf("victoire, tu a déniché le goal");
         }
+
         // vu   u'on a poussé le bloc, on met du sol dessous, 
-        //et pas besoin d'afficher le goal vu qu'on aurait déja gagné
         jeu->cells[cy][cx] = CELL_SOL;
+        //et pas besoin d'afficher le goal vu qu'on aurait déja gagné
 
       }   
     }
     // Si c'est un CELL_BLOC_FIXE, on n'a rien fait
   }
 }
-
-//
-//
-//
-//
-// tui 
-//
-//
-//
 
 void print_game(const game_t *jeu){
 
@@ -555,7 +541,7 @@ int main(int argc, char **argv) {
     if (fgets(input, sizeof(input), stdin) == NULL) {
         break; //on choppe l'input et on sors
     }
-    
+
     // on parcoure les caractères un par uns
     for (int i = 0; input[i] != '\0' && input[i] != '\n'; i++) {
       
