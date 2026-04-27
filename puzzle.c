@@ -148,32 +148,6 @@ void free_rawmap(rawmap_t *map) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Crée la carte brute par défaut, si on ne donne pas de nom de fichier au
  * programme.
  *
@@ -222,7 +196,7 @@ typedef struct {
 
 } game_t;
 
-// on utilise un enum pour représenter les différents types de cellules possibles.
+// on utilise un  type enum pour représenter les différents types de cellules possibles.
 // ça evite de se rappeler que 0 c'est le sol, 1 c'est un bloc, etc ... 
 
 typedef enum {
