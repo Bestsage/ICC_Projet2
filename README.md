@@ -1,123 +1,102 @@
-<div align="center">
+# Bix Puzzle — ICC Projet 2
 
-# Bix Puzzle — ICC-C 2025-2026
+Jeu de puzzle en terminal en C : on déplace **Bix** (`@`) sur une grille pour atteindre le **goal** (`!`) en poussant des blocs.
 
-<p>
-  <img src="https://img.shields.io/badge/EPFL-ICC--C-red?style=for-the-badge" alt="EPFL ICC-C">
-  <img src="https://img.shields.io/badge/Langage-C-00599C?style=for-the-badge&logo=c&logoColor=white" alt="Langage C">
-  <img src="https://img.shields.io/badge/Statut-Mini--projet-blueviolet?style=for-the-badge" alt="Statut">
-</p>
+## Vue d’ensemble du code
 
-_Un mini-jeu de puzzle en console où Bix pousse des blocs, évite les trous, et vise le goal._
+Le projet est concentré dans `puzzle.c` :
 
-</div>
+- **Zone fournie (à ne pas modifier)**  
+  Lecture/validation d’une carte (`rawmap_t`), création de carte brute (`make_rawmap`), lecture fichier (`read_map_file`), libération (`free_rawmap`).
+- **Zone implémentée**  
+  - Structure de jeu `game_t` (grille, dimensions, position de Bix, goal, carte d’origine).
+  - Enum `cell_type_t` pour typer les cellules (sol, bloc fixe, bloc mobile, trou, goal…).
+  - Initialisation (`create_game`) à partir de `rawmap_t`.
+  - Boucle de jeu dans `main` avec commandes clavier.
+  - Logique de déplacement/poussée (`appliquer_commande`, `push_bloc`).
+  - Réinitialisation (`reset`) et affichage coloré ANSI (`print_game`).
 
----
+## Règles actuellement implémentées
 
-## Aperçu rapide
+### Légende
 
-> **Objectif :** atteindre la case `!` (goal) avec Bix (`@`) en manipulant intelligemment les blocs.
-
-### Légende de la carte
-
-| Symbole | Signification |
-|:--:|---|
-| ` ` (espace) | Sol |
-| `x` | Bloc fixe |
+| Symbole | Rôle |
+|---|---|
+| ` ` | Sol |
+| `x` / `X` | Bloc fixe |
 | `*` | Bloc déplaçable |
-| `+` | Bloc déplaçable une seule fois |
+| `+` | Bloc déplaçable une fois (devient fixe après poussée réussie) |
 | `o` | Trou |
 | `!` | Goal |
-| `@` | Bix (affichage en jeu) |
+| `@` | Bix (affichage) |
 
-### Commandes clavier
+### Contrôles
 
 | Touche | Action |
-|:--:|---|
-| `e` | Nord ⬆ |
-| `d` | Sud ⬇ |
-| `s` | Ouest ⬅ |
-| `f` | Est  |
-| `r` | Reset de la partie |
-| `x` | Abandon / quitter |
+|---|---|
+| `e` | Monter |
+| `d` | Descendre |
+| `s` | Gauche |
+| `f` | Droite |
+| `r` | Reset de la map |
+| `x` | Quitter |
 
----
+### Comportement
 
-## Règles du jeu
-
-- Bix se déplace sur les **cases libres** (sol, trous, goal).
-- Si une case voisine contient un bloc déplaçable (`*` ou `+`) et que la case derrière est libre, Bix pousse le bloc.
+- Bix se déplace sur sol, trou, goal.
+- Si Bix entre dans un trou : reset.
+- Si Bix atteint le goal : victoire.
+- Bix peut pousser `*` et `+` si la case derrière est compatible.
+- Un `+` poussé sur sol devient bloc fixe.
 - Un bloc poussé dans un trou disparaît.
-- Un bloc `+` devient fixe après un déplacement (s’il ne tombe pas dans un trou).
-- Si Bix tombe dans un trou, la carte est réinitialisée.
-- Si Bix atteint le goal : **victoire** 
 
----
-
-##  Format des fichiers de carte
+## Format des maps
 
 ```txt
 W H
 posx posy
 <ligne 1>
-<ligne 2>
 ...
 <ligne H>
 ```
 
-- `W H` : dimensions de la grille.
+- `W H` : largeur/hauteur.
 - `posx posy` : position initiale de Bix.
-- Les lignes de carte ont une longueur max `W` (les caractères manquants sont traités comme des espaces).
-- La première ligne correspond au haut de la carte (`y = H - 1`).
+- Une ligne plus courte que `W` est complétée comme du sol.
 
----
-
-##  Compilation & exécution
-
-### Compiler
+## Compilation et exécution
 
 ```bash
 gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
-```
-
-### Lancer
-
-```bash
-# carte par défaut
 ./puzzle
-
-# carte depuis fichier
+# ou
 ./puzzle examples/level1.txt
 ```
 
----
-
-##  Structure du repo
+## Arborescence
 
 ```txt
 .
 ├── puzzle.c
-├── bix-puzzle.pdf
+├── puzzle_original.c
 ├── examples/
-│   ├── level1.txt
-│   ├── level2.txt
-│   ├── level3.txt
-│   ├── map1.txt
-│   └── ...
-└── examples.zip
+├── bix-puzzle.pdf
+└── README.md
 ```
 
----
+## Améliorations proposées
 
-##  Cadre académique
-
-> Projet **individuel** (section GM, avril 2026).  
-> Respecter le mischage du code
-
----
-
-<div align="center">
-
-**Bix compte sur toi.**
-
-</div>
+1. **Corriger l’indexation de grille dans les déplacements**
+   - Vérifier systématiquement l’ordre `[y][x]` pour éviter les accès inversés.
+2. **Sécuriser davantage les bornes**
+   - Vérifier que la case “derrière le bloc poussé” reste dans la carte avant lecture/écriture.
+3. **Validation stricte des maps**
+   - Rejeter explicitement les caractères invalides et les cartes sans/avec plusieurs goals.
+4. **Améliorer l’UX terminal**
+   - Messages de victoire/défaite plus lisibles, aide des commandes affichée en permanence.
+5. **Ajouter des tests automatisés**
+   - Cas de déplacement simple, poussée, chute dans trou, reset, victoire, bords de carte.
+6. **Séparer le code**
+   - Découper en modules (`map.c`, `game.c`, `render.c`) pour faciliter maintenance et tests.
+7. **Uniformiser le style**
+   - Harmoniser noms, orthographe des messages, commentaires, conventions de formatage.
