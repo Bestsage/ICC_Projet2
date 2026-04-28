@@ -466,7 +466,7 @@ void print_game(const game_t *jeu){
       else{
         switch (jeu->cells[y][x]) {
           case CELL_BLOC_FIXE: 
-            printf("\033[1;30mX\033[0m"); // Gris foncé
+            printf("\033[1;30mx\033[0m"); // Gris foncé
             break;
           case CELL_BLOC_DEP: 
             printf("\033[1;34m*\033[0m"); // Bleu
@@ -475,7 +475,7 @@ void print_game(const game_t *jeu){
             printf("\033[1;36m+\033[0m"); // Cyan
             break;
           case CELL_TROU: 
-            printf("\033[1;31m0\033[0m"); // Rouge (Attention, c'est le chiffre zéro !)
+            printf("\033[1;31mo\033[0m"); // Rouge (Attention, c'est le chiffre zéro !)
             break;
           case CELL_GOAL: 
             printf("\033[1;32m!\033[0m"); // Vert fluo
