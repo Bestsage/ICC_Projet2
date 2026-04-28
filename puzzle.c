@@ -274,9 +274,9 @@ game_t create_game(const rawmap_t *rawmap){
           break;
         case '!':
           jeu.cells[y][x] = CELL_GOAL;
-
           jeu.goal_x = (int)x;
-          jeu.goal_y = (int)y;            
+          jeu.goal_y = (int)y; 
+                     
           break;
         case ' ':
         default: // c'est un peu redondant avec la verification de la longuer de la ligne mais il prend plus de cas spéciaux
