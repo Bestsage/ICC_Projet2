@@ -559,12 +559,15 @@ int main(int argc, char **argv) {
 
         // dans le cas ou bix est arrivé au goal on aura deja le texte mais il faut quiter la boucle
 
+
+        // On réaffiche l'état
+        print_game(&jeu);
+
         if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
+          // on a mis la sortie de victoire après un dernier affichage du jeu
           game_on = false; // Fin de partie !
           break;
         }
-        // On réaffiche l'état
-        print_game(&jeu);
 
       }
     }
