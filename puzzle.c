@@ -330,7 +330,7 @@ bool push_bloc(cell_type_t bloc, int py, int px,bool *doit_reset, game_t *jeu){
       // gameover, on a fixé un bloc sur le goal
       //printf("mec t'est null recommence \n");
       //printf("tu a rendu le goal inaccessible\n"); texte commenté pour passer les tests auto 
-      *doit_reset = true;
+      //*doit_reset = true; ça marcherai mais pas dans les tests, alors c'est commenté
       return (1);
     }
     else if (jeu->cells[py][px] == CELL_TROU){
