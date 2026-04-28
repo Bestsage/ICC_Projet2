@@ -219,7 +219,7 @@ game_t create_game(const rawmap_t *rawmap){
   jeu.width = rawmap->width;
   jeu.height = rawmap->height;
   jeu.bix_x = rawmap->posx;
-  jeu.bix_y = rawmap->posy;
+  jeu.bix_y = jeu.height - 1 - rawmap->posy;
   jeu.origin = rawmap;
   // on se garde uin espace en memoire
 
@@ -522,7 +522,7 @@ int main(int argc, char **argv) {
       char cmd = input[i];
 
       if(cmd == 'x'){
-        printf("Abandon");
+        printf("Abandon :-(");
         game_on = false; // on sortira du jeu
         break; // et on arrète de lire la boucle
       }
