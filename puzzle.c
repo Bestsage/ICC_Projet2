@@ -456,13 +456,13 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
 
       }   
     }
-    // Si c'est un CELL_BLOC_FIXE, on n'a rien fait
+    // Si c'est un CELL_BLOC_FIXE, on n'a rien fait donc pas de moove interdit 
   }
 }
 
 void print_game(const game_t *jeu){
 
-  // a chaque frame, en efface l'ancienne map 
+  // a chaque frame, on "efface" l'ancienne map 
   printf("\033[2J\033[H");
   // titre
   printf("\033[1;35m=== LE PUZZLE DE BIX ===\033[0m\n\n");
