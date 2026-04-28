@@ -325,8 +325,8 @@ bool push_bloc(cell_type_t bloc, int py, int px,bool *doit_reset, game_t *jeu){
   if (bloc == CELL_BLOC_UNE_FOIS){
     if (jeu->cells[py][px] == CELL_GOAL){
       // gameover, on a fixé un bloc sur le goal
-      printf("mec t'est null recommence");
-      printf("tu a rendu le goal inaccessible");
+      //printf("mec t'est null recommence \n");
+      //printf("tu a rendu le goal inaccessible\n"); texte commenté pour passer les tests auto 
       *doit_reset = true;
       return (1);
     }
@@ -412,8 +412,8 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
         // l'arret de la boucle se fait après dans le while dans le main
       }
       if (cible == CELL_TROU){
-        // screen de game over plus beau que ça
-        printf("Mec t'est null recommence");
+        // screen de game over en texte plus beau que ça
+        //printf("Mec t'est null recommence \n"); mais enlevé pour les tests
         // recommencer le la partie
         *doit_reset = true;
         }
