@@ -576,7 +576,7 @@ int main(int argc, char **argv) {
     printf("Abandon :-(\n");
   }
   else{
-    printf("Bravo ! Tu as atteint le goal ! \n");
+    // printf("Bravo ! Tu as atteint le goal ! \n");
   }
 
   // on verifie pourquoi on est sorti de la loop
