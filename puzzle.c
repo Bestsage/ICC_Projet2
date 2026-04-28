@@ -407,8 +407,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
 
       }
       if (cible == CELL_GOAL){
-        //  clear et beau screen de fin 
-        printf("Bravo vous avez gagnié!");
+        // on peut deplacer bix
         jeu->bix_x = cx;
         jeu->bix_y = cy;
         // l'arret de la boucle se fait après dans le while dans le main
@@ -558,7 +557,7 @@ int main(int argc, char **argv) {
         }
         // On réaffiche l'état
         print_game(&jeu);
-        
+
       }
     }
   }
