@@ -470,29 +470,29 @@ void print_game(const game_t *jeu){
     for (size_t x = 0; x < jeu->width; x++){
       // faut que si c'est la case de bix, on le mette
       if(x == (size_t)jeu->bix_x && y == (size_t)jeu->bix_y){
-        printf("\033[1;33m@\033[0m");
+        printf("\033[1;33m @\033[0m");
         // bix en jaune fluo
       }
       else{
         switch (jeu->cells[y][x]) {
           case CELL_BLOC_FIXE: 
-            printf("\033[1;30mx\033[0m"); // Gris foncé
+            printf("\033[1;30m x\033[0m"); // Gris foncé
             break;
           case CELL_BLOC_DEP: 
-            printf("\033[1;34m*\033[0m"); // Bleu
+            printf("\033[1;34m *\033[0m"); // Bleu
             break;
           case CELL_BLOC_UNE_FOIS: 
-            printf("\033[1;36m+\033[0m"); // Cyan
+            printf("\033[1;36m +\033[0m"); // Cyan
             break;
           case CELL_TROU: 
-            printf("\033[1;31m\033[0m"); // Rouge
+            printf("\033[1;31m o\033[0m"); // Rouge
             break;
           case CELL_GOAL: 
-            printf("\033[1;32m!\033[0m"); // Vert fluo
+            printf("\033[1;32m !\033[0m"); // Vert fluo
             break;
           case CELL_SOL:
           default: 
-            printf(" "); // print du rien 
+            printf("  "); // print du rien 
             break;
         }
       }
