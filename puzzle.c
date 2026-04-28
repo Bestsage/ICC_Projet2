@@ -321,7 +321,7 @@ static bool en_jeu(int x, int y, const game_t *jeu) {
     return (x >= 0 && x < (int)jeu->width && y >= 0 && y < (int)jeu->height);
 }
 
-bool push_bloc(cell_type_t bloc, int py, int px,bool *doit_reset, game_t *jeu){
+bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){ // j'ai du enlever le dois_reset pour les arg de fonction
 
   if (!en_jeu(px, py, jeu)) return(0); // on verifie si on pousse dans les limites de la map
 
@@ -429,7 +429,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
       int py = cy + dy;
 
 
-      if (push_bloc(cible, py, px, doit_reset, jeu)){
+      if (push_bloc(cible, py, px, jeu)){ // j'ai du enlever le dois_reset pour les arg de fonction
         // si on a pu pousser le bloc bix prend la placxe de la cible
         jeu->cells[cy][cx] = CELL_SOL; // l'ancienne case du bloc deviens libre
         jeu->bix_x = cx; // on y met bix
