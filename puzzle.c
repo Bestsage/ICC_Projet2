@@ -528,7 +528,6 @@ int main(int argc, char **argv) {
 
       if(cmd == 'x'){
         print_game(&jeu); // le jeu dois s'afficher une dernière fois  
-        printf("Abandon :-(");
         abandon = true;
         game_on = false; // on sortira du jeu
         break; // et on arrète de lire la boucle
@@ -551,14 +550,15 @@ int main(int argc, char **argv) {
           break; // On annule les touches suivantes car on a reset
         }
 
-        // On réaffiche l'état
-        print_game(&jeu);
-
         // dans le cas ou bix est arrivé au goal on aura deja le texte mais il faut quiter la boucle
+
         if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
           game_on = false; // Fin de partie !
           break;
         }
+        // On réaffiche l'état
+        print_game(&jeu);
+        
       }
     }
   }
@@ -566,7 +566,7 @@ int main(int argc, char **argv) {
     printf("Abandon :-(\n");
   }
   else{
-    printf("Bravo ! Tu as atteint le goal !\n");
+    printf("Bravo ! Tu as atteint le goal ! \n");
   }
 
   // on verifie pourquoi on est sorti de la loop
