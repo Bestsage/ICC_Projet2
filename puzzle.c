@@ -312,7 +312,6 @@ void reset(game_t *jeu) {
   const rawmap_t *backup = jeu->origin; // on choppe la map de base 
   free_game(jeu); //on libère l'espace de l'ancienne tentative 
   *jeu = create_game(backup); // on refais un espace de jeu
-  print_game(jeu);
 }
 
 // juste pour verifier si une position appartient à l'espace de jeu
@@ -522,6 +521,7 @@ int main(int argc, char **argv) {
       char cmd = input[i];
 
       if(cmd == 'x'){
+        print_game(&jeu); // le jeu dois s'afficher une dernière fois  
         printf("Abandon :-(");
         game_on = false; // on sortira du jeu
         break; // et on arrète de lire la boucle
@@ -530,6 +530,7 @@ int main(int argc, char **argv) {
         reset(&jeu);
         break;
       }
+
       else if (cmd == 'e' || cmd == 'd' || cmd == 's' || cmd == 'f') {
         
         bool doit_reset = false;
