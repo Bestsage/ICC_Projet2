@@ -507,8 +507,11 @@ int main(int argc, char **argv) {
   // pour l'input du prof ( max 100 input)
   char input[100];
 
+    bool game_on = true; // la variable d'activation du jeu est on
+    bool abandon = false; // on met la variable d'abandon a false 
+
   // mainloop avant la victoire
-  bool game_on = true;
+
 
   print_game(&jeu); // on lance le jeu pour la première fois
 
@@ -526,6 +529,7 @@ int main(int argc, char **argv) {
       if(cmd == 'x'){
         print_game(&jeu); // le jeu dois s'afficher une dernière fois  
         printf("Abandon :-(");
+        abandon = true;
         game_on = false; // on sortira du jeu
         break; // et on arrète de lire la boucle
       }
@@ -558,6 +562,15 @@ int main(int argc, char **argv) {
       }
     }
   }
+  if(abandon){
+    printf("Abandon :-(\n");
+  }
+  else{
+    printf("Bravo ! Tu as atteint le goal !\n");
+  }
+
+  // on verifie pourquoi on est sorti de la loop
+
   // libérer le jeu
 
   free_game (&jeu);
