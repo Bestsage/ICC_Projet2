@@ -218,8 +218,8 @@ game_t create_game(const rawmap_t *rawmap){
 
   jeu.width = rawmap->width;
   jeu.height = rawmap->height;
+  jeu.bix_x = rawmap->posx;
   jeu.bix_y = jeu.height - 1 - rawmap->posy;
-  jeu.bix_y = rawmap->posy;
   jeu.origin = rawmap;
   // on se garde uin espace en memoire
 
@@ -541,6 +541,7 @@ int main(int argc, char **argv) {
       }
       else if (cmd == 'r'){
         reset(&jeu);
+        print_game(&jeu);
         break;
       }
 
@@ -554,7 +555,8 @@ int main(int argc, char **argv) {
         // Si le reset est trigger pour nuimporte quelle raison
         if (doit_reset) {
           reset(&jeu);
-          break; // On annule les touches suivantes car on a reset
+          print_game(&jeu);
+          // On continue les touches suivantes après un reset de trou
         }
 
         // dans le cas ou bix est arrivé au goal on aura deja le texte mais il faut quiter la boucle
@@ -576,7 +578,7 @@ int main(int argc, char **argv) {
     printf("Abandon :-(\n");
   }
   else{
-    // printf("Bravo ! Tu as atteint le goal ! \n");
+    printf("Bravo ! Tu as atteint le goal !\n");
   }
 
   // on verifie pourquoi on est sorti de la loop
