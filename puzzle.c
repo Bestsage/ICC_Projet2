@@ -321,7 +321,9 @@ static bool en_jeu(int x, int y, const game_t *jeu) {
 }
 
 bool push_bloc(cell_type_t bloc, int py, int px,bool *doit_reset, game_t *jeu){
-  
+
+  if (!en_jeu(px, py, jeu)) return(0); // on verifie si on pousse dans les limites de la map
+
   if (bloc == CELL_BLOC_UNE_FOIS){
     if (jeu->cells[py][px] == CELL_GOAL){
       // gameover, on a fixé un bloc sur le goal
@@ -425,6 +427,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
   
       int px = cx + dx;
       int py = cy + dy;
+
 
       if (push_bloc(cible, py, px, doit_reset, jeu)){
         // si on a pu pousser le bloc bix prend la placxe de la cible
