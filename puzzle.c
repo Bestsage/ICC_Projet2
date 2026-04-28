@@ -318,7 +318,7 @@ void reset(game_t *jeu) {
 // juste pour verifier si une position appartient à l'espace de jeu
 static bool en_jeu(int x, int y, const game_t *jeu) {
     // On renvoie directement le résultat de la condition logique (ET)
-    return (x >= 0 && x < jeu->width && y >= 0 && y < jeu->height);
+    return (x >= 0 && x < (int)jeu->width && y >= 0 && y < (int)jeu->height);
 }
 
 bool push_bloc(cell_type_t bloc, int py, int px,bool *doit_reset, game_t *jeu){
@@ -459,7 +459,7 @@ void print_game(const game_t *jeu){
   for (size_t y = 0; y < jeu->height; y++){
     for (size_t x = 0; x < jeu->width; x++){
       // faut que si c'est la case de bix, on le mette
-      if(x == jeu->bix_x && y == jeu->bix_y){
+      if(x == (size_t)jeu->bix_x && y == (size_t)jeu->bix_y){
         printf("\033[1;33m@\033[0m");
         // bix en jaune fluo
       }
