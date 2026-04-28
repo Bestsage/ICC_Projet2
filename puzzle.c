@@ -218,7 +218,7 @@ game_t create_game(const rawmap_t *rawmap){
 
   jeu.width = rawmap->width;
   jeu.height = rawmap->height;
-  jeu.bix_x = rawmap->posx;
+  jeu.bix_y = jeu.height - 1 - rawmap->posy;
   jeu.bix_y = rawmap->posy;
   jeu.origin = rawmap;
   // on se garde uin espace en memoire
@@ -276,7 +276,7 @@ game_t create_game(const rawmap_t *rawmap){
           jeu.cells[y][x] = CELL_GOAL;
           jeu.goal_x = (int)x;
           jeu.goal_y = (int)y; 
-                     
+
           break;
         case ' ':
         default: // c'est un peu redondant avec la verification de la longuer de la ligne mais il prend plus de cas spéciaux
@@ -331,6 +331,7 @@ bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){ // j'ai du enleve
       //printf("mec t'est null recommence \n");
       //printf("tu a rendu le goal inaccessible\n"); texte commenté pour passer les tests auto 
       //*doit_reset = true; ça marcherai mais pas dans les tests, alors c'est commenté
+      jeu->cells[py][px] = CELL_BLOC_FIXE;
       return (1);
     }
     else if (jeu->cells[py][px] == CELL_TROU){
