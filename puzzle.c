@@ -428,10 +428,10 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
 
       if (push_bloc(cible, py, px, doit_reset, jeu)){
         // si on a pu pousser le bloc bix prend la placxe de la cible
-        jeu->bix_x = cx;
+        jeu->cells[cy][cx] = CELL_SOL; // l'ancienne case du bloc deviens libre
+        jeu->bix_x = cx; // on y met bix
         jeu->bix_y = cy;
         
-        jeu->cells[cy][cx] = CELL_SOL;
       
 
         if(cx == jeu->goal_x && cy == jeu->goal_y){
