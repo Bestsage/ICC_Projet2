@@ -219,7 +219,7 @@ game_t create_game(const rawmap_t *rawmap){
   jeu.width = rawmap->width;
   jeu.height = rawmap->height;
   jeu.bix_x = rawmap->posx;
-  jeu.bix_y = jeu.height - 1 - rawmap->posy;
+  jeu.bix_y = rawmap->posy;
   jeu.origin = rawmap;
   // on se garde uin espace en memoire
 
@@ -276,7 +276,7 @@ game_t create_game(const rawmap_t *rawmap){
           jeu.cells[y][x] = CELL_GOAL;
 
           jeu.goal_x = (int)x;
-          jeu.goal_y = (int)(jeu.height - 1 - y); // 
+          jeu.goal_y = (int)y;            
           break;
         case ' ':
         default: // c'est un peu redondant avec la verification de la longuer de la ligne mais il prend plus de cas spéciaux
@@ -431,7 +431,13 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
 
       if (push_bloc(cible, py, px, jeu)){ // j'ai du enlever le dois_reset pour les arg de fonction
         // si on a pu pousser le bloc bix prend la placxe de la cible
-        jeu->cells[cy][cx] = CELL_SOL; // l'ancienne case du bloc deviens libre
+        if (jeu->bix_x == jeu->goal_x && jeu->bix_y == jeu->goal_y) {
+          jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_GOAL;
+        } 
+        else {
+          jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_SOL;
+        } 
+        // l'ancienne case du bloc deviens libre
         jeu->bix_x = cx; // on y met bix
         jeu->bix_y = cy;
         
