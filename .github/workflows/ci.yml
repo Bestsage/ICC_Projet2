@@ -1,0 +1,41 @@
+name: CI — Puzzle de Bix
+
+# Déclenché à chaque push et pull request sur n'importe quelle branche
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Compile & Test (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Récupérer le code du dépôt
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Compiler avec tous les warnings + sanitizers
+      #    (exactement les mêmes options que celles mentionnées dans l'énoncé)
+      - name: Compile puzzle.c
+        run: |
+          gcc -Wall -Wextra -Werror \
+              -fsanitize=address,undefined \
+              -g \
+              -o puzzle puzzle.c
+
+      # 3. Rendre le script de test exécutable et le lancer
+      - name: Run tests
+        run: |
+          chmod +x run_tests.sh
+          bash run_tests.sh --no-compile
+
+      # 4. En cas d'échec, uploader les diffs pour pouvoir les consulter
+      #    dans l'onglet "Artifacts" de l'action GitHub
+      - name: Upload diffs (si échec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-diffs
+          path: /tmp/bix_diff_*.txt
+          retention-days: 7
