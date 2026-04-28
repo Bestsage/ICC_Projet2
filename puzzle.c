@@ -425,13 +425,14 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
 
     // si le bloc est bougeable, verifier ce qui est après et remplacer les bonnes cases
     else if (cible == CELL_BLOC_DEP || cible == CELL_BLOC_UNE_FOIS) {
-  
+      
+      // on prends les coordonées de la case ou le bloc serait poussé
       int px = cx + dx;
       int py = cy + dy;
 
 
       if (push_bloc(cible, py, px, jeu)){ // j'ai du enlever le dois_reset pour les arg de fonction
-        // si on a pu pousser le bloc bix prend la placxe de la cible
+        // si on a pu pousser le bloc bix prend la placxe de la cible mais on check pour le goal 
         if (jeu->bix_x == jeu->goal_x && jeu->bix_y == jeu->goal_y) {
           jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_GOAL;
         } 
@@ -444,10 +445,10 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
         
       
 
-        if(cx == jeu->goal_x && cy == jeu->goal_y){
+        //if(cx == jeu->goal_x && cy == jeu->goal_y){
           // victoire, bix a trouvé le goal sous un bloc
-          printf("victoire, tu a déniché le goal");
-        }
+          // printf("victoire, tu a déniché le goal");
+        //} déja handle dans la mainloop , c'est redondant
 
         // vu   u'on a poussé le bloc, on met du sol dessous, 
         jeu->cells[cy][cx] = CELL_SOL;
@@ -484,14 +485,14 @@ void print_game(const game_t *jeu){
             printf("\033[1;36m+\033[0m"); // Cyan
             break;
           case CELL_TROU: 
-            printf("\033[1;31mo\033[0m"); // Rouge (Attention, c'est le chiffre zéro !)
+            printf("\033[1;31m\033[0m"); // Rouge
             break;
           case CELL_GOAL: 
             printf("\033[1;32m!\033[0m"); // Vert fluo
             break;
           case CELL_SOL:
           default: 
-            printf(" "); // Espace vide classique
+            printf(" "); // print du rien 
             break;
         }
       }
@@ -574,14 +575,14 @@ int main(int argc, char **argv) {
       }
     }
   }
+
+  // on verifie pourquoi on est sorti de la loop
   if(abandon){
     printf("Abandon :-(\n");
   }
   else{
     printf("Bravo ! Tu as atteint le goal !\n");
   }
-
-  // on verifie pourquoi on est sorti de la loop
 
   // libérer le jeu
 
