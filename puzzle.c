@@ -432,7 +432,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
         jeu->bix_x = cx;
         jeu->bix_y = cy;
         
-        jeu->cells[cx][cy] = CELL_SOL;
+        jeu->cells[cy][cx] = CELL_SOL;
       
 
         if(cx == jeu->goal_x && cy == jeu->goal_y){
