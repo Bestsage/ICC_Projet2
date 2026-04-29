@@ -1,6 +1,6 @@
-# 🧩 Bix Puzzle — ICC Projet 2
+# Bix Puzzle — ICC Projet 2
 
-> Jeu de puzzle en **C** dans le terminal : guide **Bix** (`@`) jusqu'au goal (`!`) en poussant des blocs sur la grille.
+Jeu de puzzle en **C** dans le terminal : guide **Bix** (`@`) jusqu'au goal (`!`) en poussant des blocs sur la grille.
 
 ```
 xxxxxxxxxx
@@ -17,19 +17,19 @@ xxxxxxxxxx
 
 ---
 
-## 📋 Table des matières
+## Table des matières
 
-1. [Compilation & lancement](#️-compilation--lancement)
-2. [Contrôles](#-contrôles)
-3. [Légende de la grille](#️-légende-de-la-grille)
-4. [Règles du jeu](#-règles-du-jeu)
-5. [Format des maps](#-format-des-maps)
-6. [Structure du code](#️-structure-du-code)
-7. [Arborescence](#-arborescence)
+1. [Compilation & lancement](#compilation--lancement)
+2. [Contrôles](#contrôles)
+3. [Légende de la grille](#légende-de-la-grille)
+4. [Règles du jeu](#règles-du-jeu)
+5. [Format des maps](#format-des-maps)
+6. [Structure du code](#structure-du-code)
+7. [Arborescence](#arborescence)
 
 ---
 
-## ⚙️ Compilation & lancement
+## Compilation & lancement
 
 ```bash
 # Compiler
@@ -44,22 +44,22 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 ---
 
-## 🎮 Contrôles
+## Contrôles
 
-| Touche | Action        |
-| :----: | ------------- |
-| `e`    | ⬆️ Monter     |
-| `d`    | ⬇️ Descendre  |
-| `s`    | ⬅️ Gauche     |
-| `f`    | ➡️ Droite     |
-| `r`    | 🔄 Reset      |
-| `x`    | ❌ Quitter    |
+| Touche | Action     |
+| :----: | ---------- |
+| `e`    | Monter     |
+| `d`    | Descendre  |
+| `s`    | Gauche     |
+| `f`    | Droite     |
+| `r`    | Reset      |
+| `x`    | Quitter    |
 
 > Plusieurs touches peuvent être enchaînées sur la même ligne de saisie (ex : `eeff`).
 
 ---
 
-## 🗺️ Légende de la grille
+## Légende de la grille
 
 | Symbole | Type                | Description                                         |
 | :-----: | ------------------- | --------------------------------------------------- |
@@ -73,7 +73,7 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 ---
 
-## 📐 Règles du jeu
+## Règles du jeu
 
 - **Déplacement** : Bix peut se déplacer sur le sol, le goal et les trous.
 - **Trou** : si Bix marche dans un trou, la partie repart depuis le début.
@@ -84,7 +84,7 @@ gcc -std=c11 -Wall -Wextra -g -fsanitize=address,undefined puzzle.c -o puzzle
 
 ---
 
-## 📄 Format des maps
+## Format des maps
 
 ```
 W H
@@ -102,7 +102,7 @@ posx posy
 
 ---
 
-## 🏗️ Structure du code
+## Structure du code
 
 Tout le code se trouve dans `puzzle.c`, divisé en deux zones.
 
@@ -131,12 +131,13 @@ Tout le code se trouve dans `puzzle.c`, divisé en deux zones.
 
 ---
 
-## 📁 Arborescence
+## Arborescence
 
 ```
 .
 ├── puzzle.c              # Code source principal
 ├── puzzle_original.c     # Version fournie (référence)
+├── run_tests.sh          # Script de tests automatiques
 ├── bix-puzzle.pdf        # Énoncé du projet
 ├── examples/             # Maps de test et fichiers d'exemple
 │   ├── level1.txt
