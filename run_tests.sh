@@ -24,6 +24,9 @@ PASS=0
 FAIL=0
 ERRORS=()
 
+# Nombre max d'etats errones affiches par test (evite les murs de texte)
+MAX_STATES_SHOWN=3
+
 # ---------------------------------------------------------------------------
 # Detection automatique du dossier des cartes
 # ---------------------------------------------------------------------------
@@ -90,63 +93,73 @@ cmd_direction() {
 }
 
 # ---------------------------------------------------------------------------
-# state_context : affiche le contexte d'un etat donne
+# cmd_timeline : affiche la sequence de commandes avec surlignage
 #
-# Args: line_num  map_height  all_cmds  input_file
+# Args: all_cmds  active_idx
 #
-# Calcule dans quel etat on est (initial / apres commande N)
-# et quelle ligne de l'input a declenche cette commande.
+#   active_idx = -1  → etat initial (avant toute commande)
+#   active_idx >= 0  → index 0-base de la commande qui a produit cet etat
+#
+# Affichage :  e d s ❮f❯ e d x
+#              passees en DIM, active en BOLD+RED entre crochets, futures normales
 # ---------------------------------------------------------------------------
-state_context() {
-    local line_num="$1"
-    local map_height="$2"
-    local all_cmds="$3"
-    local input_file="$4"
+cmd_timeline() {
+    local all_cmds="$1"
+    local active_idx="$2"
+    local len="${#all_cmds}"
 
-    # Ligne dans le board (1-indexed au sein de l'etat courant)
-    local row_in_state=$(( (line_num - 1) % map_height + 1 ))
-    # Numero d'etat (0 = affichage initial, 1 = apres cmd 1, ...)
-    local state_idx=$(( (line_num - 1) / map_height ))
-    # Commande qui a produit cet etat (0-indexed dans all_cmds)
-    local cmd_idx=$(( state_idx - 1 ))
+    printf "  ${CYAN}Commandes :${RESET} "
 
-    printf "  ${CYAN}${BOLD}┄ Etat #%d${RESET}" "$state_idx"
-    printf "${CYAN} (ligne %d/%d de cet etat)${RESET}" "$row_in_state" "$map_height"
-
-    if [ "$cmd_idx" -lt 0 ]; then
-        printf "${CYAN} — affichage initial${RESET}\n"
-    elif [ "$cmd_idx" -lt "${#all_cmds}" ]; then
-        local cmd_char="${all_cmds:$cmd_idx:1}"
-        local direction
-        direction=$(cmd_direction "$cmd_char")
-
-        # Retrouver sur quelle ligne de l'input file cette commande se trouve
-        # et a quelle position dans cette ligne
-        local found_line found_col found_content
-        read -r found_line found_col found_content < <(awk -v target="$cmd_idx" '
-            BEGIN { total = 0 }
-            {
-                n = length($0)
-                if (total + n > target) {
-                    col = target - total + 1
-                    print NR, col, $0
-                    exit
-                }
-                total += n
-            }
-        ' "$input_file")
-
-        printf "${CYAN} — commande #%d : ${BOLD}'%s'${RESET}${CYAN} (%s)${RESET}\n" \
-            "$(( cmd_idx + 1 ))" "$cmd_char" "$direction"
-        printf "  ${DIM}   ligne %d de l'input, position %d : '%s'${RESET}\n" \
-            "${found_line:-?}" "${found_col:-?}" "${found_content:-?}"
+    if [ "$active_idx" -lt 0 ]; then
+        # Etat initial : pas encore de commande
+        printf "${BOLD}[INIT]${RESET}"
     else
-        printf "${CYAN} — fin de partie${RESET}\n"
+        printf "${DIM}[INIT]${RESET}"
+    fi
+
+    for (( i=0; i<len; i++ )); do
+        local ch="${all_cmds:$i:1}"
+        if [ "$i" -lt "$active_idx" ]; then
+            # Commande deja jouee
+            printf " ${DIM}%s${RESET}" "$ch"
+        elif [ "$i" -eq "$active_idx" ]; then
+            # Commande active (celle qui a produit l'etat errone)
+            printf " ${BOLD}${RED}❮%s❯${RESET}" "$ch"
+        else
+            # Commande future
+            printf " %s" "$ch"
+        fi
+    done
+    printf "\n"
+
+    # Ligne de detail pour la commande active
+    if [ "$active_idx" -ge 0 ] && [ "$active_idx" -lt "$len" ]; then
+        local ch="${all_cmds:$active_idx:1}"
+        printf "  ${CYAN}→ Cmd #%d : ${BOLD}'%s'${RESET}${CYAN} = %s${RESET}\n" \
+            "$(( active_idx + 1 ))" "$ch" "$(cmd_direction "$ch")"
     fi
 }
 
 # ---------------------------------------------------------------------------
-# pretty_diff : affiche un diff cote-a-cote colore avec contexte de jeu
+# block_lines : extrait les lignes [start, end] d'un fichier
+#               retourne les lignes separees par \n, ou "" si hors-limites
+# ---------------------------------------------------------------------------
+block_lines() {
+    local file="$1"
+    local start="$2"
+    local end="$3"
+    awk "NR>=$start && NR<=$end" "$file"
+}
+
+# ---------------------------------------------------------------------------
+# pretty_diff : affiche les etats errones bloc par bloc (board entier)
+#
+# Approche :
+#   - La sortie est une sequence d'etats, chacun de map_height lignes.
+#   - On compare etat par etat ; pour chaque etat different, on affiche
+#     le board attendu et le board obtenu cote a cote, ligne par ligne,
+#     avec les lignes erronees colorees.
+#   - La timeline des commandes est affichee au-dessus de chaque etat.
 #
 # Args: exp_f  got_f  map_height  all_cmds  input_file
 # ---------------------------------------------------------------------------
@@ -156,104 +169,101 @@ pretty_diff() {
     local map_height="${3:-7}"
     local all_cmds="${4:-}"
     local input_file="${5:-}"
-    local col=40
+    local col=42   # largeur d'une colonne (board)
 
-    local total_exp total_got n_missing n_extra
+    local total_exp total_got
     total_exp=$(wc -l < "$exp_f")
     total_got=$(wc -l < "$got_f")
-    n_missing=$(diff "$got_f" "$exp_f" | grep -c '^>' || true)
-    n_extra=$(  diff "$got_f" "$exp_f" | grep -c '^<' || true)
 
-    # En-tete
-    printf "\n  ${BOLD}%-4s  %-*s  %-*s${RESET}\n" \
-        "LN" $col "ATTENDU (correct)" $col "OBTENU (ton programme)"
-    printf "  %s\n" "$(printf '─%.0s' $(seq 1 $((col * 2 + 8))))"
+    local n_states_exp=$(( (total_exp + map_height - 1) / map_height ))
+    local n_states_got=$(( (total_got + map_height - 1) / map_height ))
+    local n_states=$(( n_states_exp > n_states_got ? n_states_exp : n_states_got ))
 
-    # Diff cote-a-cote dans un fichier temporaire numerote
-    local sidebyside="/tmp/bix_sidebyside_$$.txt"
-    diff -y --width=$(( col * 2 + 6 )) --expand-tabs \
-        "$exp_f" "$got_f" \
-    | nl -ba -nrz -w4 > "$sidebyside" || true
+    local n_fail=0   # nombre total d'etats differents
+    local n_shown=0  # nombre d'etats effectivement affiches
 
-    local CTX=3
-    local total_rows
-    total_rows=$(wc -l < "$sidebyside")
+    for (( s=0; s<n_states; s++ )); do
+        local ls=$(( s * map_height + 1 ))
+        local le=$(( ls + map_height - 1 ))
 
-    # Indices des lignes qui ont un marqueur d'erreur (|, <, >)
-    local error_lines
-    error_lines=$(grep -nE '  [|<>]  |  <$' "$sidebyside" | cut -d: -f1)
+        local exp_block got_block
+        exp_block=$(block_lines "$exp_f" "$ls" "$le")
+        got_block=$(block_lines "$got_f" "$ls" "$le")
 
-    if [ -z "$error_lines" ]; then
-        echo -e "  ${DIM}(aucune difference detectee)${RESET}"
-    else
-        local prev_end=0
-        local prev_state=-1
-
-        while IFS= read -r errln; do
-            local start=$(( errln - CTX ))
-            local end=$(( errln + CTX ))
-            [ $start -lt 1 ] && start=1
-            [ $end -gt $total_rows ] && end=$total_rows
-
-            # Numero d'etat de cette erreur
-            local cur_state=$(( (errln - 1) / map_height ))
-
-            # Separateur + contexte si on saute des lignes
-            if [ $start -gt $(( prev_end + 1 )) ] && [ $prev_end -gt 0 ]; then
-                local skipped=$(( start - prev_end - 1 ))
-                echo -e "  ${DIM}       ··· $skipped ligne(s) identique(s) ···${RESET}"
-            fi
-
-            # Afficher le contexte de jeu au debut d'un nouvel etat
-            if [ "$cur_state" -ne "$prev_state" ] && \
-               [ "$draw_from" -le "$end" 2>/dev/null ] || \
-               [ $start -gt $(( prev_end )) ]; then
-                if [ -n "$all_cmds" ] && [ -n "$input_file" ]; then
-                    state_context "$errln" "$map_height" "$all_cmds" "$input_file"
-                fi
-                prev_state=$cur_state
-            fi
-
-            # N'afficher que ce qui n'a pas encore ete affiche
-            local draw_from=$(( prev_end + 1 ))
-            [ $draw_from -lt $start ] && draw_from=$start
-
-            if [ $draw_from -le $end ]; then
-                sed -n "${draw_from},${end}p" "$sidebyside" \
-                | while IFS= read -r line; do
-                    local ln="${line:0:4}"
-                    local body="${line:5}"
-                    if   [[ "$body" =~ [[:space:]][[:space:]]'<'$ ]]; then
-                        printf "  ${DIM}%s${RESET}  ${GREEN}%s${RESET}\n" "$ln" "$body"
-                    elif [[ "$body" =~ [[:space:]][[:space:]]'>'[[:space:]] ]]; then
-                        printf "  ${DIM}%s${RESET}  ${RED}%s${RESET}\n"   "$ln" "$body"
-                    elif [[ "$body" =~ [[:space:]][[:space:]]'|'[[:space:]] ]]; then
-                        printf "  ${DIM}%s${RESET}  ${YELLOW}%s${RESET}\n" "$ln" "$body"
-                    else
-                        printf "  ${DIM}%s  %s${RESET}\n" "$ln" "$body"
-                    fi
-                done
-                prev_end=$end
-            fi
-        done <<< "$error_lines"
-
-        if [ $prev_end -lt $total_rows ]; then
-            local remaining=$(( total_rows - prev_end ))
-            echo -e "  ${DIM}       ··· $remaining ligne(s) identique(s) en fin de fichier ···${RESET}"
+        if [ "$exp_block" = "$got_block" ]; then
+            continue
         fi
+
+        n_fail=$(( n_fail + 1 ))
+        [ $n_shown -ge $MAX_STATES_SHOWN ] && continue
+        n_shown=$(( n_shown + 1 ))
+
+        # ── En-tete de l'etat ───────────────────────────────────────────────
+        echo ""
+        local cmd_idx=$(( s - 1 ))
+
+        if [ "$s" -eq 0 ]; then
+            echo -e "  ${BOLD}${YELLOW}╾─ Etat initial (avant toute commande)${RESET}"
+        else
+            local ch="${all_cmds:$cmd_idx:1}"
+            echo -e "  ${BOLD}${YELLOW}╾─ Etat #${s} — commande '${ch}' → $(cmd_direction "$ch")${RESET}"
+            if [ -n "$all_cmds" ]; then
+                cmd_timeline "$all_cmds" "$cmd_idx"
+            fi
+        fi
+
+        # ── En-tete du tableau cote-a-cote ─────────────────────────────────
+        printf "\n  ${BOLD}%4s  ${GREEN}%-*s${RESET}  ${BOLD}${RED}%-*s${RESET}\n" \
+            "LN" "$col" "ATTENDU ✓" "$col" "OBTENU ✗"
+        printf "  %s\n" "$(printf '─%.0s' $(seq 1 $((col * 2 + 10))))"
+
+        # ── Lignes du board ─────────────────────────────────────────────────
+        for (( row=1; row<=map_height; row++ )); do
+            local ln=$(( ls + row - 1 ))
+            local exp_line got_line
+            exp_line=$(printf '%s' "$exp_block" | sed -n "${row}p")
+            got_line=$(printf '%s' "$got_block" | sed -n "${row}p")
+
+            if [ "$exp_line" = "$got_line" ]; then
+                # Ligne correcte : affichage discret
+                printf "  ${DIM}%4d  %-*s  %-*s${RESET}\n" \
+                    "$ln" "$col" "$exp_line" "$col" "$got_line"
+            else
+                # Ligne erronee : vert a gauche (attendu), rouge a droite (obtenu)
+                # Marquer les caracteres differents avec une fleche entre les deux
+                printf "  %4d  ${GREEN}%-*s${RESET}  ${RED}%-*s${RESET}\n" \
+                    "$ln" "$col" "$exp_line" "$col" "$got_line"
+            fi
+        done
+
+        # Signaler si le bloc obtenu est plus court (programme s'est arrete tot)
+        local exp_lines got_lines
+        exp_lines=$(printf '%s\n' "$exp_block" | wc -l)
+        got_lines=$(printf '%s\n' "$got_block" | wc -l)
+        if [ "$got_lines" -lt "$exp_lines" ]; then
+            echo -e "  ${RED}  ↳ Le programme n'a affiche que $got_lines ligne(s) sur $exp_lines attendues${RESET}"
+        elif [ "$got_lines" -gt "$exp_lines" ]; then
+            echo -e "  ${RED}  ↳ Le programme a affiche $got_lines lignes, seulement $exp_lines attendues${RESET}"
+        fi
+    done
+
+    # ── Message si on a tronque l'affichage ────────────────────────────────
+    if [ $n_fail -gt $MAX_STATES_SHOWN ]; then
+        local hidden=$(( n_fail - MAX_STATES_SHOWN ))
+        echo -e "\n  ${DIM}··· et $hidden autre(s) etat(s) incorrect(s) non affiches ···${RESET}"
     fi
 
-    rm -f "$sidebyside"
-
-    # Resume chiffre
+    # ── Resume chiffre ──────────────────────────────────────────────────────
     echo ""
     echo -e "  ${BOLD}Resume :${RESET}"
-    printf "  ${DIM}%-25s %s${RESET}\n" "Lignes attendues :"  "$total_exp"
-    printf "  ${DIM}%-25s %s${RESET}\n" "Lignes obtenues :"   "$total_got"
-    [ "$n_missing" -gt 0 ] && \
-        echo -e "  ${GREEN}  Manquantes (vertes) : ${n_missing} — ton programme n'affiche pas ces lignes${RESET}"
-    [ "$n_extra" -gt 0 ] && \
-        echo -e "  ${RED}  En trop (rouges)    : ${n_extra} — ton programme affiche des lignes de trop${RESET}"
+    printf "  ${DIM}%-30s %d lignes (%d etats)${RESET}\n" \
+        "Attendu :"  "$total_exp" "$n_states_exp"
+    printf "  ${DIM}%-30s %d lignes (%d etats)${RESET}\n" \
+        "Obtenu :"   "$total_got" "$n_states_got"
+    if [ $n_fail -gt 0 ]; then
+        printf "  ${RED}%-30s %d / %d${RESET}\n" \
+            "Etats incorrects :" "$n_fail" "$n_states"
+    fi
     echo ""
 }
 
@@ -292,8 +302,6 @@ run_test() {
     local exp_f="/tmp/bix_expected_${name}.txt"
     local san_f="/tmp/bix_sanitizer_${name}.txt"
 
-    echo -e "\n${BOLD}┌─ TEST : ${CYAN}${name}${RESET}${BOLD} ── carte : ${map}${RESET}"
-
     # Hauteur de la map (2eme champ de la 1ere ligne du fichier carte)
     local map_height
     map_height=$(head -1 "$map" | awk '{print $2}')
@@ -301,6 +309,10 @@ run_test() {
     # Toutes les commandes a plat (concatenation des lignes sans \n)
     local all_cmds
     all_cmds=$(tr -d '\n' < "$input")
+
+    # En-tete du test avec recap de la sequence de commandes
+    echo -e "\n${BOLD}┌─ TEST : ${CYAN}${name}${RESET}${BOLD} ── carte : ${map}  (${map_height} lignes/etat)${RESET}"
+    echo -e "${BOLD}│  Sequence :${RESET} ${all_cmds}  ${DIM}(${#all_cmds} commande(s))${RESET}"
 
     timeout 10 ./puzzle "$map" < "$input" 2>"$san_f" \
         | normalize > "$actual_f" || true
