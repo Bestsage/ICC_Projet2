@@ -463,36 +463,36 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
 void print_game(const game_t *jeu){
 
   // a chaque frame, on "efface" l'ancienne map 
-  printf("\033[2J\033[H");
+  //printf("\033[2J\033[H");
   // titre
-  printf("\033[1;35m=== LE PUZZLE DE BIX ===\033[0m\n\n");
+  //printf("\033[1;35m=== LE PUZZLE DE BIX ===\033[0m\n\n");
   for (size_t y = 0; y < jeu->height; y++){
     for (size_t x = 0; x < jeu->width; x++){
       // faut que si c'est la case de bix, on le mette
       if(x == (size_t)jeu->bix_x && y == (size_t)jeu->bix_y){
-        printf("\033[1;33m @\033[0m");
+        printf("@");
         // bix en jaune fluo
       }
       else{
         switch (jeu->cells[y][x]) {
           case CELL_BLOC_FIXE: 
-            printf("\033[1;30m x\033[0m"); // Gris foncé
+            printf("x");
             break;
           case CELL_BLOC_DEP: 
-            printf("\033[1;34m *\033[0m"); // Bleu
+            printf("*");
             break;
           case CELL_BLOC_UNE_FOIS: 
-            printf("\033[1;36m +\033[0m"); // Cyan
+            printf("+");
             break;
           case CELL_TROU: 
-            printf("\033[1;31m o\033[0m"); // Rouge
+            printf("o");
             break;
           case CELL_GOAL: 
-            printf("\033[1;32m !\033[0m"); // Vert fluo
+            printf("!");
             break;
           case CELL_SOL:
           default: 
-            printf("  "); // print du rien 
+            printf(" ");
             break;
         }
       }
