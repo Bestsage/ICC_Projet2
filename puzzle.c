@@ -556,7 +556,7 @@ int main(int argc, char **argv) {
         // Si le reset est trigger pour nuimporte quelle raison
         if (doit_reset) {
           reset(&jeu);
-          print_game(&jeu);
+          //print_game(&jeu);
           // On continue les touches suivantes après un reset de trou
         }
 
