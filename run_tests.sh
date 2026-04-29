@@ -152,14 +152,116 @@ block_lines() {
 }
 
 # ---------------------------------------------------------------------------
-# pretty_diff : affiche les etats errones bloc par bloc (board entier)
+# _state_header_dim : en-tete discret pour un etat de contexte (correct)
+# Args: state_idx  all_cmds
+# ---------------------------------------------------------------------------
+_state_header_dim() {
+    local s="$1"
+    local all_cmds="$2"
+    local cmd_idx=$(( s - 1 ))
+
+    if [ "$s" -eq 0 ]; then
+        printf "  ${DIM}┄ Etat initial${RESET}\n"
+    else
+        local ch="${all_cmds:$cmd_idx:1}"
+        printf "  ${DIM}┄ Etat #%d — '%s' → %s${RESET}\n" \
+            "$s" "$ch" "$(cmd_direction "$ch")"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# _show_ctx_state : affiche un etat CORRECT en mode contexte (grise, compact)
+# Args: s  exp_f  map_height  all_cmds
+# ---------------------------------------------------------------------------
+_show_ctx_state() {
+    local s="$1"
+    local exp_f="$2"
+    local map_height="$3"
+    local all_cmds="$4"
+    local col=42
+
+    local ls=$(( s * map_height + 1 ))
+    local le=$(( ls + map_height - 1 ))
+    local block
+    block=$(block_lines "$exp_f" "$ls" "$le")
+
+    _state_header_dim "$s" "$all_cmds"
+
+    for (( row=1; row<=map_height; row++ )); do
+        local ln=$(( ls + row - 1 ))
+        local line
+        line=$(printf '%s' "$block" | sed -n "${row}p")
+        printf "  ${DIM}%4d  %s${RESET}\n" "$ln" "$line"
+    done
+    echo -e "  ${DIM}     ✓ OK${RESET}"
+}
+
+# ---------------------------------------------------------------------------
+# _show_fail_state : affiche un etat ERRONE avec diff cote-a-cote et timeline
+# Args: s  exp_f  got_f  map_height  all_cmds
+# ---------------------------------------------------------------------------
+_show_fail_state() {
+    local s="$1"
+    local exp_f="$2"
+    local got_f="$3"
+    local map_height="$4"
+    local all_cmds="$5"
+    local col=42
+
+    local ls=$(( s * map_height + 1 ))
+    local le=$(( ls + map_height - 1 ))
+    local exp_block got_block
+    exp_block=$(block_lines "$exp_f" "$ls" "$le")
+    got_block=$(block_lines "$got_f" "$ls" "$le")
+
+    local cmd_idx=$(( s - 1 ))
+
+    # En-tete de l'etat errone
+    if [ "$s" -eq 0 ]; then
+        echo -e "  ${BOLD}${YELLOW}╾─ Etat initial ← PREMIER ECHEC${RESET}"
+    else
+        local ch="${all_cmds:$cmd_idx:1}"
+        echo -e "  ${BOLD}${YELLOW}╾─ Etat #${s} — commande '${ch}' → $(cmd_direction "$ch")  ← ECHEC${RESET}"
+        [ -n "$all_cmds" ] && cmd_timeline "$all_cmds" "$cmd_idx"
+    fi
+
+    # Tableau cote-a-cote
+    printf "\n  ${BOLD}%4s  ${GREEN}%-*s${RESET}  ${BOLD}${RED}%-*s${RESET}\n" \
+        "LN" "$col" "ATTENDU ✓" "$col" "OBTENU ✗"
+    printf "  %s\n" "$(printf '─%.0s' $(seq 1 $((col * 2 + 10))))"
+
+    for (( row=1; row<=map_height; row++ )); do
+        local ln=$(( ls + row - 1 ))
+        local exp_line got_line
+        exp_line=$(printf '%s' "$exp_block" | sed -n "${row}p")
+        got_line=$(printf '%s' "$got_block" | sed -n "${row}p")
+
+        if [ "$exp_line" = "$got_line" ]; then
+            printf "  ${DIM}%4d  %-*s  %-*s${RESET}\n" \
+                "$ln" "$col" "$exp_line" "$col" "$got_line"
+        else
+            printf "  %4d  ${GREEN}%-*s${RESET}  ${RED}%-*s${RESET}\n" \
+                "$ln" "$col" "$exp_line" "$col" "$got_line"
+        fi
+    done
+
+    # Bloc trop court ou trop long
+    local exp_cnt got_cnt
+    exp_cnt=$(printf '%s\n' "$exp_block" | wc -l)
+    got_cnt=$(printf '%s\n' "$got_block" | wc -l)
+    if   [ "$got_cnt" -lt "$exp_cnt" ]; then
+        echo -e "  ${RED}  ↳ Seulement $got_cnt ligne(s) affichee(s) sur $exp_cnt attendues${RESET}"
+    elif [ "$got_cnt" -gt "$exp_cnt" ]; then
+        echo -e "  ${RED}  ↳ $got_cnt lignes affichees, $exp_cnt attendues${RESET}"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# pretty_diff : affiche les etats errones avec 2 etats de contexte avant
 #
-# Approche :
-#   - La sortie est une sequence d'etats, chacun de map_height lignes.
-#   - On compare etat par etat ; pour chaque etat different, on affiche
-#     le board attendu et le board obtenu cote a cote, ligne par ligne,
-#     avec les lignes erronees colorees.
-#   - La timeline des commandes est affichee au-dessus de chaque etat.
+# Pour chaque etat errone, on affiche :
+#   - les 2 etats corrects qui precedent (grise, compact) si disponibles
+#   - l'etat errone en pleine couleur avec diff et timeline
 #
 # Args: exp_f  got_f  map_height  all_cmds  input_file
 # ---------------------------------------------------------------------------
@@ -169,7 +271,6 @@ pretty_diff() {
     local map_height="${3:-7}"
     local all_cmds="${4:-}"
     local input_file="${5:-}"
-    local col=42   # largeur d'une colonne (board)
 
     local total_exp total_got
     total_exp=$(wc -l < "$exp_f")
@@ -179,8 +280,9 @@ pretty_diff() {
     local n_states_got=$(( (total_got + map_height - 1) / map_height ))
     local n_states=$(( n_states_exp > n_states_got ? n_states_exp : n_states_got ))
 
-    local n_fail=0   # nombre total d'etats differents
-    local n_shown=0  # nombre d'etats effectivement affiches
+    local n_fail=0
+    local n_shown=0
+    local last_ctx_shown=-1   # dernier index d'etat de contexte deja affiche
 
     for (( s=0; s<n_states; s++ )); do
         local ls=$(( s * map_height + 1 ))
@@ -190,64 +292,41 @@ pretty_diff() {
         exp_block=$(block_lines "$exp_f" "$ls" "$le")
         got_block=$(block_lines "$got_f" "$ls" "$le")
 
-        if [ "$exp_block" = "$got_block" ]; then
-            continue
-        fi
+        [ "$exp_block" = "$got_block" ] && continue
 
         n_fail=$(( n_fail + 1 ))
         [ $n_shown -ge $MAX_STATES_SHOWN ] && continue
         n_shown=$(( n_shown + 1 ))
 
-        # ── En-tete de l'etat ───────────────────────────────────────────────
         echo ""
-        local cmd_idx=$(( s - 1 ))
 
-        if [ "$s" -eq 0 ]; then
-            echo -e "  ${BOLD}${YELLOW}╾─ Etat initial (avant toute commande)${RESET}"
-        else
-            local ch="${all_cmds:$cmd_idx:1}"
-            echo -e "  ${BOLD}${YELLOW}╾─ Etat #${s} — commande '${ch}' → $(cmd_direction "$ch")${RESET}"
-            if [ -n "$all_cmds" ]; then
-                cmd_timeline "$all_cmds" "$cmd_idx"
+        # ── Contexte : les 2 etats corrects qui precedent ───────────────────
+        # On cherche les indices s-2 et s-1 (dans l'ordre), en sautant ceux
+        # deja affiches comme contexte d'un echec precedent.
+        local ctx_start=$(( s - 2 ))
+        [ $ctx_start -lt 0 ] && ctx_start=0
+
+        local first_ctx=1   # booleen : premier bloc de contexte de ce groupe ?
+        for (( c=ctx_start; c<s; c++ )); do
+            [ $c -le $last_ctx_shown ] && continue
+
+            # Separateur visuel uniquement avant le premier bloc de contexte
+            # du groupe (pas entre deux blocs de contexte consecutifs)
+            if [ $first_ctx -eq 1 ] && [ $last_ctx_shown -ge 0 ]; then
+                echo -e "  ${DIM}  ···${RESET}"
             fi
-        fi
+            first_ctx=0
 
-        # ── En-tete du tableau cote-a-cote ─────────────────────────────────
-        printf "\n  ${BOLD}%4s  ${GREEN}%-*s${RESET}  ${BOLD}${RED}%-*s${RESET}\n" \
-            "LN" "$col" "ATTENDU ✓" "$col" "OBTENU ✗"
-        printf "  %s\n" "$(printf '─%.0s' $(seq 1 $((col * 2 + 10))))"
-
-        # ── Lignes du board ─────────────────────────────────────────────────
-        for (( row=1; row<=map_height; row++ )); do
-            local ln=$(( ls + row - 1 ))
-            local exp_line got_line
-            exp_line=$(printf '%s' "$exp_block" | sed -n "${row}p")
-            got_line=$(printf '%s' "$got_block" | sed -n "${row}p")
-
-            if [ "$exp_line" = "$got_line" ]; then
-                # Ligne correcte : affichage discret
-                printf "  ${DIM}%4d  %-*s  %-*s${RESET}\n" \
-                    "$ln" "$col" "$exp_line" "$col" "$got_line"
-            else
-                # Ligne erronee : vert a gauche (attendu), rouge a droite (obtenu)
-                # Marquer les caracteres differents avec une fleche entre les deux
-                printf "  %4d  ${GREEN}%-*s${RESET}  ${RED}%-*s${RESET}\n" \
-                    "$ln" "$col" "$exp_line" "$col" "$got_line"
-            fi
+            _show_ctx_state "$c" "$exp_f" "$map_height" "$all_cmds"
+            last_ctx_shown=$c
         done
 
-        # Signaler si le bloc obtenu est plus court (programme s'est arrete tot)
-        local exp_lines got_lines
-        exp_lines=$(printf '%s\n' "$exp_block" | wc -l)
-        got_lines=$(printf '%s\n' "$got_block" | wc -l)
-        if [ "$got_lines" -lt "$exp_lines" ]; then
-            echo -e "  ${RED}  ↳ Le programme n'a affiche que $got_lines ligne(s) sur $exp_lines attendues${RESET}"
-        elif [ "$got_lines" -gt "$exp_lines" ]; then
-            echo -e "  ${RED}  ↳ Le programme a affiche $got_lines lignes, seulement $exp_lines attendues${RESET}"
-        fi
+        # ── Etat errone ─────────────────────────────────────────────────────
+        _show_fail_state "$s" "$exp_f" "$got_f" "$map_height" "$all_cmds"
+        last_ctx_shown=$s
     done
 
-    # ── Message si on a tronque l'affichage ────────────────────────────────
+    # ── Message si des echecs ont ete tronques ──────────────────────────────
     if [ $n_fail -gt $MAX_STATES_SHOWN ]; then
         local hidden=$(( n_fail - MAX_STATES_SHOWN ))
         echo -e "\n  ${DIM}··· et $hidden autre(s) etat(s) incorrect(s) non affiches ···${RESET}"

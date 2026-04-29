@@ -397,7 +397,7 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
     // déplacement simple :
     if (cible == CELL_SOL || cible == CELL_GOAL || cible == CELL_TROU) {
       
-      if (cible == CELL_SOL){
+      if (cible == CELL_SOL || cible == CELL_GOAL){
 
         //jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_SOL;
         // commenté car bix agirait comme un gomme
@@ -407,12 +407,6 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
         jeu->bix_x = cx;
         jeu->bix_y = cy;
 
-      }
-      if (cible == CELL_GOAL){
-        // on peut deplacer bix
-        jeu->bix_x = cx;
-        jeu->bix_y = cy;
-        // l'arret de la boucle se fait après dans le while dans le main
       }
       if (cible == CELL_TROU){
         // screen de game over en texte plus beau que ça
@@ -556,7 +550,7 @@ int main(int argc, char **argv) {
         // Si le reset est trigger pour nuimporte quelle raison
         if (doit_reset) {
           reset(&jeu);
-          print_game(&jeu);
+          //print_game(&jeu);
           // On continue les touches suivantes après un reset de trou
         }
 
