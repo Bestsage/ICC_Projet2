@@ -476,41 +476,42 @@ void print_game(const game_t *jeu){
 }
 
 void test_code(){
-  // Tests unitaires simples — style étudiant : courts et explicites.
 
-  // === Test en_jeu() ===
-  // petite carte 2x2, Bix en bas a droite
+  // Petit bloc de tests unitaires. comme demandé en consigne
+
+  // Test 1 : en_jeu()
+  // repère bien les cases dans la carte et hors de la carte.
   rawmap_t r1 = make_rawmap(2, 2, 1, 0, (const char *[]){"  ", " @"});
   game_t g1 = create_game(&r1);
   assert(en_jeu(0, 0, &g1) == true); // coin bas-gauche -> dedans
   assert(en_jeu(-1, 0, &g1) == false); // a gauche -> dehors
   assert(en_jeu(2, 0, &g1) == false); // a droite hors largeur -> dehors
 
-  // === Tests push_bloc() ===
+  // Tests push_bloc()
   rawmap_t r2 = make_rawmap(3, 3, 1, 0, (const char *[]){"   ", "   ", " @ "});
   game_t g2 = create_game(&r2);
   int dst_y = 1, dst_x = 2;
 
-  // 1) poser un bloc de type dep sur du sol -> devient CELL_BLOC_DEP
+  // poser un bloc de type dep sur du sol -> devient CELL_BLOC_DEP
   g2.cells[dst_y][dst_x] = CELL_SOL;
   assert(push_bloc(CELL_BLOC_DEP, dst_y, dst_x, &g2) == 1);
   assert(g2.cells[dst_y][dst_x] == CELL_BLOC_DEP);
 
-  // 2) poser un bloc de type dep sur un trou -> absorbé (retourne 1)
+  // poser un bloc de type dep sur un trou -> absorbé (retourne 1)
   g2.cells[dst_y][dst_x] = CELL_TROU;
   assert(push_bloc(CELL_BLOC_DEP, dst_y, dst_x, &g2) == 1);
 
-  // 3) bloc une fois posé sur sol devient bloc fixe
+  // poser un bloc de type une fois sur sol devient bloc fixe
   g2.cells[dst_y][dst_x] = CELL_SOL;
   assert(push_bloc(CELL_BLOC_UNE_FOIS, dst_y, dst_x, &g2) == 1);
   assert(g2.cells[dst_y][dst_x] == CELL_BLOC_FIXE);
 
-  // 4) bloc dep posé sur goal cache le goal
+  // bloc dep posé sur goal cache le goal
   g2.cells[dst_y][dst_x] = CELL_GOAL;
   assert(push_bloc(CELL_BLOC_DEP, dst_y, dst_x, &g2) == 1);
   assert(g2.cells[dst_y][dst_x] == CELL_BLOC_DEP);
 
-  // === Test reset() ===
+  // Test reset()
   rawmap_t r3 = make_rawmap(3, 3, 1, 0, (const char *[]){"   ", "   ", " @ "});
   game_t g3 = create_game(&r3);
   g3.cells[1][1] = CELL_BLOC_DEP; // modification
@@ -518,7 +519,7 @@ void test_code(){
   // apres reset la case doit redevenir sol
   assert(g3.cells[1][1] == CELL_SOL);
 
-  // === create_game doit trouver le goal s'il y en a un ===
+  // create_game doit trouver le goal s'il y en a un
   rawmap_t r4 = make_rawmap(2, 2, 0, 0, (const char *[]){"! ", " @"});
   game_t g4 = create_game(&r4);
   assert(g4.goal_x >= 0 && g4.goal_x < (int)g4.width);
