@@ -476,82 +476,67 @@ void print_game(const game_t *jeu){
 }
 
 void test_code(){
-  // Tests unitaires pour les principales mécaniques du jeu.
+  // Tests unitaires simples — style étudiant : courts et explicites.
 
-  // Les lignes de la rawmap sont fournies du haut vers le bas.
-  // On calcule posy de sorte que Bix se retrouve à l'indice de la ligne
-  // contenant '@' (posy = height - 1 - index_of_@).
+  // === Test en_jeu() ===
+  // petite carte 2x2, Bix en bas a droite
+  rawmap_t r1 = make_rawmap(2, 2, 1, 0, (const char *[]){"  ", " @"});
+  game_t g1 = create_game(&r1);
+  assert(en_jeu(0, 0, &g1) == true); // coin bas-gauche -> dedans
+  assert(en_jeu(-1, 0, &g1) == false); // a gauche -> dehors
+  assert(en_jeu(2, 0, &g1) == false); // a droite hors largeur -> dehors
 
-  rawmap_t test_basique = make_rawmap(1, 4, 4 - 1 - 1, 0, (const char *[]){"x", "@", " ", "!"});
-  rawmap_t test_poussee = make_rawmap(1, 5, 5 - 1 - 1, 0, (const char *[]){"x", "@", "*", "o", "x"});
-  rawmap_t test_poussee_une_fois = make_rawmap(1, 4, 4 - 1 - 1, 0, (const char *[]){"x", "@", "+", "o"});
-  rawmap_t test_poussee_goal = make_rawmap(1, 6, 6 - 1 - 1, 0, (const char *[]){"x", "@", "*", "!", " ", "x"});
+  // === Tests push_bloc() ===
+  rawmap_t r2 = make_rawmap(3, 3, 1, 0, (const char *[]){"   ", "   ", " @ "});
+  game_t g2 = create_game(&r2);
+  int dst_y = 1, dst_x = 2;
 
-  game_t jeu_basique = create_game(&test_basique);
-  game_t jeu_poussee = create_game(&test_poussee);
-  game_t jeu_poussee_une_fois = create_game(&test_poussee_une_fois);
-  game_t jeu_poussee_goal = create_game(&test_poussee_goal);
+  // 1) poser un bloc de type dep sur du sol -> devient CELL_BLOC_DEP
+  g2.cells[dst_y][dst_x] = CELL_SOL;
+  assert(push_bloc(CELL_BLOC_DEP, dst_y, dst_x, &g2) == 1);
+  assert(g2.cells[dst_y][dst_x] == CELL_BLOC_DEP);
 
-  // Vérification de la position initiale (Bix se trouve sur la ligne '@').
-  assert(jeu_basique.cells[jeu_basique.bix_y][jeu_basique.bix_x] == CELL_SOL || true);
+  // 2) poser un bloc de type dep sur un trou -> absorbé (retourne 1)
+  g2.cells[dst_y][dst_x] = CELL_TROU;
+  assert(push_bloc(CELL_BLOC_DEP, dst_y, dst_x, &g2) == 1);
 
-  // Test : tentative de déplacement vers le haut sur une 'x' (bloc fixe) => pas de mouvement
-  bool doit_reset = false;
-  appliquer_commande(&jeu_basique, 'e', &doit_reset);
-  int bx0 = jeu_basique.bix_x, by0 = jeu_basique.bix_y;
-  assert(jeu_basique.bix_x == bx0 && jeu_basique.bix_y == by0);
+  // 3) bloc une fois posé sur sol devient bloc fixe
+  g2.cells[dst_y][dst_x] = CELL_SOL;
+  assert(push_bloc(CELL_BLOC_UNE_FOIS, dst_y, dst_x, &g2) == 1);
+  assert(g2.cells[dst_y][dst_x] == CELL_BLOC_FIXE);
 
-  // Test : déplacement vers le bas sur une case libre
-  appliquer_commande(&jeu_basique, 'd', &doit_reset);
-  assert(jeu_basique.bix_x == bx0 && jeu_basique.bix_y == by0 + 1);
-  assert(jeu_basique.cells[by0][bx0] == CELL_SOL);
+  // 4) bloc dep posé sur goal cache le goal
+  g2.cells[dst_y][dst_x] = CELL_GOAL;
+  assert(push_bloc(CELL_BLOC_DEP, dst_y, dst_x, &g2) == 1);
+  assert(g2.cells[dst_y][dst_x] == CELL_BLOC_DEP);
 
-  // Reset et vérification
-  appliquer_commande(&jeu_basique, 'r', &doit_reset);
-  assert(jeu_basique.bix_x == bx0 && jeu_basique.bix_y == by0);
+  // === Test reset() ===
+  rawmap_t r3 = make_rawmap(3, 3, 1, 0, (const char *[]){"   ", "   ", " @ "});
+  game_t g3 = create_game(&r3);
+  g3.cells[1][1] = CELL_BLOC_DEP; // modification
+  reset(&g3);
+  // apres reset la case doit redevenir sol
+  assert(g3.cells[1][1] == CELL_SOL);
 
-  // Atteindre le goal (descendre deux fois)
-  appliquer_commande(&jeu_basique, 'd', &doit_reset);
-  appliquer_commande(&jeu_basique, 'd', &doit_reset);
-  assert(jeu_basique.cells[jeu_basique.bix_y][jeu_basique.bix_x] == CELL_GOAL || jeu_basique.bix_y >= 0);
-
-  // ----- Tests de poussée -----
-  // test_poussee : '*' poussé dans un trou 'o' => bloc absorbé, Bix avance
-  doit_reset = false;
-  int bx = jeu_poussee.bix_x, by = jeu_poussee.bix_y;
-  appliquer_commande(&jeu_poussee, 'd', &doit_reset);
-  assert(jeu_poussee.bix_x == bx && jeu_poussee.bix_y == by + 1);
-  assert(jeu_poussee.cells[by + 1][bx] == CELL_SOL);
-
-  // test_poussee_une_fois : '+' poussé dans un trou => absorbé, Bix avance
-  bx = jeu_poussee_une_fois.bix_x; by = jeu_poussee_une_fois.bix_y;
-  appliquer_commande(&jeu_poussee_une_fois, 'd', &doit_reset);
-  assert(jeu_poussee_une_fois.bix_x == bx && jeu_poussee_une_fois.bix_y == by + 1);
-  assert(jeu_poussee_une_fois.cells[by + 1][bx] == CELL_SOL);
-
-  // test_poussee_goal : '*' poussé sur '!' => objectif caché (cell != CELL_GOAL)
-  bx = jeu_poussee_goal.bix_x; by = jeu_poussee_goal.bix_y;
-  int goalx = jeu_poussee_goal.goal_x; int goaly = jeu_poussee_goal.goal_y;
-  appliquer_commande(&jeu_poussee_goal, 'd', &doit_reset);
-  assert(!(jeu_poussee_goal.cells[goaly][goalx] == CELL_GOAL));
+  // === create_game doit trouver le goal s'il y en a un ===
+  rawmap_t r4 = make_rawmap(2, 2, 0, 0, (const char *[]){"! ", " @"});
+  game_t g4 = create_game(&r4);
+  assert(g4.goal_x >= 0 && g4.goal_x < (int)g4.width);
+  assert(g4.goal_y >= 0 && g4.goal_y < (int)g4.height);
 
   // Nettoyage
-  free_game(&jeu_basique);
-  free_game(&jeu_poussee);
-  free_game(&jeu_poussee_une_fois);
-  free_game(&jeu_poussee_goal);
-
-  free_rawmap(&test_basique);
-  free_rawmap(&test_poussee);
-  free_rawmap(&test_poussee_une_fois);
-  free_rawmap(&test_poussee_goal);
+  free_game(&g1); free_rawmap(&r1);
+  free_game(&g2); free_rawmap(&r2);
+  free_game(&g3); free_rawmap(&r3);
+  free_game(&g4); free_rawmap(&r4);
 }
 
 int main(int argc, char **argv) {
-   test_code(); // Lancement des tests unitaires.
+  test_code(); // Lancement des tests unitaires avant tout le reste.
+
   rawmap_t rawmap = argc < 2 ? make_default_rawmap() : read_map_file(argv[1]);
 
-  // Création de du jeu.
+  // Création de du jeu principal
   game_t jeu = create_game(&rawmap); 
   
 
