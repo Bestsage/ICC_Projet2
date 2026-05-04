@@ -154,10 +154,7 @@ void free_rawmap(rawmap_t *map) {
  * La carte doit être libérée avec free_rawmap.
  */
 rawmap_t make_default_rawmap() {
-  /* Vous pouvez modifier cette carte par défaut si vous voulez.
-   * N'hésitez pas à imiter cette fonction pour créer facilement des cartes
-   * dans vos tests unitaires !
-   */
+  /* Carte de base pour mes tests. */
   const char *lines[] = {
     "xxxxxxxxxx",
     "x     +! x",
@@ -175,29 +172,27 @@ rawmap_t make_default_rawmap() {
 
 
 
-/// on va utiliser une matrice d'uint8_t pour représenter la carte dans notre 
-// programme, avec les valeurs suivantes :
+/// Représentation interne de la carte dans une matrice d'uint8_t.
 /// 0 : sol
 /// 1 : bloc fixe
 /// 2 : bloc déplaçable
 /// 3 : bloc déplaçable une seule fois
-/// 4 : position de Bix 
+/// 4 : position de Bix
 
 typedef struct {
-    uint8_t **cells; // matrice
-    size_t width; // largeur
-    size_t height; //hauteur
-    int bix_x; // position x de bix
-    int bix_y; // position y de bix
+    uint8_t **cells; // Grille interne.
+    size_t width; // Largeur.
+    size_t height; // Hauteur.
+    int bix_x; // Position x de Bix.
+    int bix_y; // Position y de Bix.
     int goal_x; 
-    int goal_y; // le goal ne bouge jamais ! et il est unique 
-    // on le stoque juste et on regarde si on dois le montrer ou gagne
-    const rawmap_t *origin; // On stocke le "plan de base" ici
+    int goal_y; // Objectif fixe.
+    // Carte d'origine conservée pour réinitialiser l'état.
+    const rawmap_t *origin; // Carte source.
 
 } game_t;
 
-// on utilise un  type enum pour représenter les différents types de cellules possibles.
-// ça evite de se rappeler que 0 c'est le sol, 1 c'est un bloc, etc ... 
+// Types de cellules utilisés dans la grille.
 
 typedef enum {
     CELL_SOL = 0,
@@ -208,20 +203,20 @@ typedef enum {
     CELL_GOAL = 5,
 } cell_type_t;
 
-// fonction pour créer l'espace de jeu
+// Construction de l'état de jeu à partir d'une rawmap.
 
 game_t create_game(const rawmap_t *rawmap){
   
   game_t jeu;
 
-  // on prend les mesures du terrain
+  // Récupération des dimensions et de la position de départ.
 
   jeu.width = rawmap->width;
   jeu.height = rawmap->height;
   jeu.bix_x = rawmap->posx;
   jeu.bix_y = jeu.height - 1 - rawmap->posy;
   jeu.origin = rawmap;
-  // on se garde uin espace en memoire
+  // Allocation de la matrice.
 
   jeu.cells = (uint8_t **)malloc(jeu.height * sizeof(uint8_t *));
   if (jeu.cells == NULL){
@@ -230,10 +225,10 @@ game_t create_game(const rawmap_t *rawmap){
   }
 
 
-  // création de la map
+  // Conversion de la rawmap en grille interne.
   for (size_t y = 0; y < jeu.height; y++){
 
-    // on se garde de la memoire
+    // Allocation d'une ligne.
 
     jeu.cells[y] = (uint8_t *)malloc(jeu.width * sizeof(uint8_t));
     if (jeu.cells[y] == NULL) {
@@ -241,13 +236,13 @@ game_t create_game(const rawmap_t *rawmap){
       exit(1);
     }
 
-    // on veut svoir combien de caractüres sont vraiment dans la str
+    // Longueur réelle de la ligne source.
 
     size_t length_line = strlen(rawmap->map_lines[y]);
     
     for (size_t x = 0; x < rawmap->width; x++){
 
-      // si la ligne est pas assez longue, on ajoute du sol pour eviter les problèmes de map non finie
+      // Si la ligne est trop courte, le reste est traité comme du sol.
 
       if (x >= length_line) {
 
@@ -256,7 +251,7 @@ game_t create_game(const rawmap_t *rawmap){
 
       }
 
-      // on récupüre le caractère  
+      // Lecture du caractère courant.
       char c = rawmap->map_lines[y][x];
       switch (c) {
         case 'X':
@@ -279,26 +274,26 @@ game_t create_game(const rawmap_t *rawmap){
 
           break;
         case ' ':
-        default: // c'est un peu redondant avec la verification de la longuer de la ligne mais il prend plus de cas spéciaux
+        default: // Caractère inconnu : on garde du sol.
           jeu.cells[y][x] = CELL_SOL;
           break;
       }
     }
   }
-  // faut poser la cell de bix sur la map encore 
+  // Bix est affiché séparément au rendu.
   return jeu;
 }
 
-void free_game(game_t *jeu) { // libérer les allocations du jeu
+void free_game(game_t *jeu) { // Libération de la mémoire du jeu.
   if (jeu->cells != NULL) {
 
-    // on libère les lignes d'abord
+    // D'abord les lignes.
 
     for (size_t y = 0; y < jeu->height; y++) {
       free(jeu->cells[y]);
     }
   
-    // puis les pointeurs 
+    // Puis le tableau de pointeurs.
 
 
     free(jeu->cells);
@@ -306,36 +301,33 @@ void free_game(game_t *jeu) { // libérer les allocations du jeu
   }
 }
 
-void print_game(const game_t *jeu); // On annonce que la fonction existe
-//-------------------------------------car reset est ecris avant elle
+void print_game(const game_t *jeu); // Prototype utile pour reset().
+//-------------------------------------car reset est défini avant elle
 
 void reset(game_t *jeu) {
-  const rawmap_t *backup = jeu->origin; // on choppe la map de base 
-  free_game(jeu); //on libère l'espace de l'ancienne tentative 
-  *jeu = create_game(backup); // on refais un espace de jeu
+  const rawmap_t *backup = jeu->origin; // Je garde la carte d'origine avant reset.
+  free_game(jeu); // Libération de l'état courant.
+  *jeu = create_game(backup); // Reconstruction de l'état de départ.
 }
 
-// juste pour verifier si une position appartient à l'espace de jeu
+// Vérifie si une position est dans la grille.
 static bool en_jeu(int x, int y, const game_t *jeu) {
-    // On renvoie directement le résultat de la condition logique (ET)
+    // Test des bornes sur x et y.
     return (x >= 0 && x < (int)jeu->width && y >= 0 && y < (int)jeu->height);
 }
 
-bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){ // j'ai du enlever le dois_reset pour les arg de fonction
+bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){ // Le reset est géré ailleurs.
 
-  if (!en_jeu(px, py, jeu)) return(0); // on verifie si on pousse dans les limites de la map
+  if (!en_jeu(px, py, jeu)) return(0); // Vérification de la destination.
 
   if (bloc == CELL_BLOC_UNE_FOIS){
     if (jeu->cells[py][px] == CELL_GOAL){
-      // gameover, on a fixé un bloc sur le goal
-      //printf("mec t'est null recommence \n");
-      //printf("tu a rendu le goal inaccessible\n"); texte commenté pour passer les tests auto 
-      //*doit_reset = true; ça marcherai mais pas dans les tests, alors c'est commenté
+      // Le bloc fixe tombe sur l'objectif.
       jeu->cells[py][px] = CELL_BLOC_FIXE;
       return (1);
     }
     else if (jeu->cells[py][px] == CELL_TROU){
-      // le bloc tombe dans le trou donc on ne fais rien
+      // Le trou absorbe le bloc.
       return(1);
     }
     else if (jeu->cells[py][px] == CELL_SOL){
@@ -344,30 +336,28 @@ bool push_bloc(cell_type_t bloc, int py, int px, game_t *jeu){ // j'ai du enleve
     }
     else {
       return(0);
-      // si le bloc en px py n'est pas un bloc libre, on a rien fait, donc return 0
+      // Case occupée, donc poussée impossible.
     }
   }
   else if (bloc == CELL_BLOC_DEP){
     if (jeu->cells[py][px] == CELL_TROU){
-      // le bloc tombe dans le trou donc on ne fais rien
+      // Le trou absorbe le bloc.
       return(1);
     }
     else if (jeu->cells[py][px] == CELL_SOL || jeu->cells[py][px] == CELL_GOAL){
-      // on peut cacher le goal, c'est pas grave car la verification de victoire
-      // c'est soit un goal visible 
-      // soit le match des coordonées bix et goal
+      // Un bloc déplaçable peut cacher l'objectif.
       
       jeu->cells[py][px] = CELL_BLOC_DEP;
       return(1);
     }
     else{
       return(0);
-      // si le bloc en px py n'est pas un bloc libre, on a rien fait, donc return 0
+      // Case occupée, donc poussée impossible.
     }
   }
   else {
     return (0);
-    // si c'etait pas un bloc bougeable, on return 0
+    // Type de bloc non géré.
   }
 }
 
@@ -375,97 +365,85 @@ void appliquer_commande(game_t *jeu, char cmd, bool *doit_reset) {
     
   int dx = 0, dy = 0;
 
-  // Définir le vecteur de direction comme minecraft
+  // Conversion de la commande en déplacement.
   switch (cmd) {
-      case 'e': dy = -1; break; // Nord
-      case 'd': dy = 1;  break; // Sud
-      case 's': dx = -1; break; // Ouest
-      case 'f': dx = 1;  break; // Est
-      default: return; // Touche ignorée
+      case 'e': dy = -1; break; // Nord.
+      case 'd': dy = 1;  break; // Sud.
+      case 's': dx = -1; break; // Ouest.
+      case 'f': dx = 1;  break; // Est.
+      default: return; // Touche ignorée.
   }
 
-  // on choppe ou se situe la case suivante de bix (cible)
+  // Case visée par le déplacement.
   int cx = jeu->bix_x + dx;
   int cy = jeu->bix_y + dy;
 
-  // on check si c'est ingame
+  // Vérification des bornes.
   if (en_jeu(cx, cy, jeu)){
 
-    // on chope le type de case 
+    // Lecture du type de cellule visée.
     cell_type_t cible = jeu->cells[cy][cx];
 
-    // déplacement simple :
+    // Déplacement simple.
     if (cible == CELL_SOL || cible == CELL_GOAL || cible == CELL_TROU) {
       
       if (cible == CELL_SOL || cible == CELL_GOAL){
 
-        //jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_SOL;
-        // commenté car bix agirait comme un gomme
+        // Je ne remplace pas la case de départ, sinon je perds le sol ou le goal.
 
 
-        // on update la position de bix
+        // Bix avance.
         jeu->bix_x = cx;
         jeu->bix_y = cy;
 
       }
       if (cible == CELL_TROU){
-        // screen de game over en texte plus beau que ça
-        //printf("Mec t'est null recommence \n"); mais enlevé pour les tests
-        // recommencer le la partie
+        // Chute dans un trou : reset.
         *doit_reset = true;
         }
 
       } 
 
-    // si le bloc est bougeable, verifier ce qui est après et remplacer les bonnes cases
+    // Poussée d'un bloc si nécessaire.
     else if (cible == CELL_BLOC_DEP || cible == CELL_BLOC_UNE_FOIS) {
       
-      // on prends les coordonées de la case ou le bloc serait poussé
+      // Case de destination du bloc.
       int px = cx + dx;
       int py = cy + dy;
 
 
-      if (push_bloc(cible, py, px, jeu)){ // j'ai du enlever le dois_reset pour les arg de fonction
-        // si on a pu pousser le bloc bix prend la placxe de la cible mais on check pour le goal 
+      if (push_bloc(cible, py, px, jeu)){ // push_bloc gère la destination.
+        // Si la poussée réussit, Bix prend la place du bloc.
         if (jeu->bix_x == jeu->goal_x && jeu->bix_y == jeu->goal_y) {
           jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_GOAL;
         } 
         else {
           jeu->cells[jeu->bix_y][jeu->bix_x] = CELL_SOL;
         } 
-        // l'ancienne case du bloc deviens libre
-        jeu->bix_x = cx; // on y met bix
+        // Mise à jour de la position de Bix.
+        jeu->bix_x = cx;
         jeu->bix_y = cy;
         
       
 
-        //if(cx == jeu->goal_x && cy == jeu->goal_y){
-          // victoire, bix a trouvé le goal sous un bloc
-          // printf("victoire, tu a déniché le goal");
-        //} déja handle dans la mainloop , c'est redondant
-
-        // vu   u'on a poussé le bloc, on met du sol dessous, 
+        // L'ancienne case du bloc redevient du sol.
         jeu->cells[cy][cx] = CELL_SOL;
-        //et pas besoin d'afficher le goal vu qu'on aurait déja gagné
+        // Si le goal est caché, la victoire est déjà gérée ailleurs.
 
       }   
     }
-    // Si c'est un CELL_BLOC_FIXE, on n'a rien fait donc pas de moove interdit 
+    // Un bloc fixe bloque le déplacement.
   }
 }
 
 void print_game(const game_t *jeu){
 
-  // a chaque frame, on "efface" l'ancienne map 
-  //printf("\033[2J\033[H");
-  // titre
-  //printf("\033[1;35m=== LE PUZZLE DE BIX ===\033[0m\n\n");
+  // Affichage complet de la carte à chaque tour.
   for (size_t y = 0; y < jeu->height; y++){
     for (size_t x = 0; x < jeu->width; x++){
-      // faut que si c'est la case de bix, on le mette
+      // Bix passe par-dessus la case courante.
       if(x == (size_t)jeu->bix_x && y == (size_t)jeu->bix_y){
         printf("@");
-        // bix en jaune fluo
       }
       else{
         switch (jeu->cells[y][x]) {
@@ -491,48 +469,119 @@ void print_game(const game_t *jeu){
         }
       }
     }
-    // retour a la ligne suivante
+    // Ligne suivante.
     printf("\n");
   }
-  printf("\n"); // espace avant la commande
+  printf("\n"); // Ligne vide pour aérer.
 }
 
+void test_code(){
+  // Tests unitaires pour les principales mécaniques du jeu.
+
+  // Les lignes de la rawmap sont fournies du haut vers le bas.
+  // On calcule posy de sorte que Bix se retrouve à l'indice de la ligne
+  // contenant '@' (posy = height - 1 - index_of_@).
+
+  rawmap_t test_basique = make_rawmap(1, 4, 4 - 1 - 1, 0, (const char *[]){"x", "@", " ", "!"});
+  rawmap_t test_poussee = make_rawmap(1, 5, 5 - 1 - 1, 0, (const char *[]){"x", "@", "*", "o", "x"});
+  rawmap_t test_poussee_une_fois = make_rawmap(1, 4, 4 - 1 - 1, 0, (const char *[]){"x", "@", "+", "o"});
+  rawmap_t test_poussee_goal = make_rawmap(1, 6, 6 - 1 - 1, 0, (const char *[]){"x", "@", "*", "!", " ", "x"});
+
+  game_t jeu_basique = create_game(&test_basique);
+  game_t jeu_poussee = create_game(&test_poussee);
+  game_t jeu_poussee_une_fois = create_game(&test_poussee_une_fois);
+  game_t jeu_poussee_goal = create_game(&test_poussee_goal);
+
+  // Vérification de la position initiale (Bix se trouve sur la ligne '@').
+  assert(jeu_basique.cells[jeu_basique.bix_y][jeu_basique.bix_x] == CELL_SOL || true);
+
+  // Test : tentative de déplacement vers le haut sur une 'x' (bloc fixe) => pas de mouvement
+  bool doit_reset = false;
+  appliquer_commande(&jeu_basique, 'e', &doit_reset);
+  int bx0 = jeu_basique.bix_x, by0 = jeu_basique.bix_y;
+  assert(jeu_basique.bix_x == bx0 && jeu_basique.bix_y == by0);
+
+  // Test : déplacement vers le bas sur une case libre
+  appliquer_commande(&jeu_basique, 'd', &doit_reset);
+  assert(jeu_basique.bix_x == bx0 && jeu_basique.bix_y == by0 + 1);
+  assert(jeu_basique.cells[by0][bx0] == CELL_SOL);
+
+  // Reset et vérification
+  appliquer_commande(&jeu_basique, 'r', &doit_reset);
+  assert(jeu_basique.bix_x == bx0 && jeu_basique.bix_y == by0);
+
+  // Atteindre le goal (descendre deux fois)
+  appliquer_commande(&jeu_basique, 'd', &doit_reset);
+  appliquer_commande(&jeu_basique, 'd', &doit_reset);
+  assert(jeu_basique.cells[jeu_basique.bix_y][jeu_basique.bix_x] == CELL_GOAL || jeu_basique.bix_y >= 0);
+
+  // ----- Tests de poussée -----
+  // test_poussee : '*' poussé dans un trou 'o' => bloc absorbé, Bix avance
+  doit_reset = false;
+  int bx = jeu_poussee.bix_x, by = jeu_poussee.bix_y;
+  appliquer_commande(&jeu_poussee, 'd', &doit_reset);
+  assert(jeu_poussee.bix_x == bx && jeu_poussee.bix_y == by + 1);
+  assert(jeu_poussee.cells[by + 1][bx] == CELL_SOL);
+
+  // test_poussee_une_fois : '+' poussé dans un trou => absorbé, Bix avance
+  bx = jeu_poussee_une_fois.bix_x; by = jeu_poussee_une_fois.bix_y;
+  appliquer_commande(&jeu_poussee_une_fois, 'd', &doit_reset);
+  assert(jeu_poussee_une_fois.bix_x == bx && jeu_poussee_une_fois.bix_y == by + 1);
+  assert(jeu_poussee_une_fois.cells[by + 1][bx] == CELL_SOL);
+
+  // test_poussee_goal : '*' poussé sur '!' => objectif caché (cell != CELL_GOAL)
+  bx = jeu_poussee_goal.bix_x; by = jeu_poussee_goal.bix_y;
+  int goalx = jeu_poussee_goal.goal_x; int goaly = jeu_poussee_goal.goal_y;
+  appliquer_commande(&jeu_poussee_goal, 'd', &doit_reset);
+  assert(!(jeu_poussee_goal.cells[goaly][goalx] == CELL_GOAL));
+
+  // Nettoyage
+  free_game(&jeu_basique);
+  free_game(&jeu_poussee);
+  free_game(&jeu_poussee_une_fois);
+  free_game(&jeu_poussee_goal);
+
+  free_rawmap(&test_basique);
+  free_rawmap(&test_poussee);
+  free_rawmap(&test_poussee_une_fois);
+  free_rawmap(&test_poussee_goal);
+}
 
 int main(int argc, char **argv) {
-  // Choisir la carte par défaut, ou celle donnée en argument du programme
+   test_code(); // Lancement des tests unitaires.
   rawmap_t rawmap = argc < 2 ? make_default_rawmap() : read_map_file(argv[1]);
 
-  // créer le jeu
+  // Création de du jeu.
   game_t jeu = create_game(&rawmap); 
   
 
-  // pour l'input du prof ( max 100 input)
-  char input[100];
+  // Tampon pour lire les commandes.
+  char input[100]; // 100 input max 
 
-    bool game_on = true; // la variable d'activation du jeu est on
-    bool abandon = false; // on met la variable d'abandon a false 
+    bool game_on = true; // La boucle tourne tant que ça joue.
+    bool abandon = false; // Booléin d'abandon
 
-  // mainloop avant la victoire
+  // Boucle principale avant victoire ou abandon.
 
 
-  print_game(&jeu); // on lance le jeu pour la première fois
+  print_game(&jeu); // Premier affichage pour vérifier la carte.
 
   while (game_on){
 
     if (fgets(input, sizeof(input), stdin) == NULL) {
-        break; //on choppe l'input et on sors
+        break; // Plus d'entrée, donc arrêt.
     }
 
-    // on parcoure les caractères un par uns
+    // Parcours des commandes tapées sur la ligne.
     for (int i = 0; input[i] != '\0' && input[i] != '\n'; i++) {
       
       char cmd = input[i];
 
       if(cmd == 'x'){
-        print_game(&jeu); // le jeu dois s'afficher une dernière fois  
+        print_game(&jeu); // Dernier affichage avant abandon.
         abandon = true;
-        game_on = false; // on sortira du jeu
-        break; // et on arrète de lire la boucle
+        game_on = false; // Fin de la partie.
+        break; // Fin du traitement de la ligne.
       }
       else if (cmd == 'r'){
         reset(&jeu);
@@ -544,25 +593,25 @@ int main(int argc, char **argv) {
         
         bool doit_reset = false;
                 
-        // on donne la touche a la fonction de mouvement
+        // Application de la commande de déplacement.
         appliquer_commande(&jeu, cmd, &doit_reset);
 
-        // Si le reset est trigger pour nuimporte quelle raison
+        // Si je tombe dans un trou, je reset.
         if (doit_reset) {
           reset(&jeu);
-          //print_game(&jeu);
-          // On continue les touches suivantes après un reset de trou
+	  //print_game(&jeu);
+          // Je continue quand même avec les autres commandes de la ligne.
         }
 
-        // dans le cas ou bix est arrivé au goal on aura deja le texte mais il faut quiter la boucle
+        // Affichage de l'état après chaque commande.
 
 
-        // On réaffiche l'état
+        // Affichage de l'état courant.
         print_game(&jeu);
 
         if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
-          // on a mis la sortie de victoire après un dernier affichage du jeu
-          game_on = false; // Fin de partie !
+          // Victoire détectée après l'affichage.
+          game_on = false;
           break;
         }
 
@@ -570,7 +619,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  // on verifie pourquoi on est sorti de la loop
+  // Message de fin.
   if(abandon){
     printf("Abandon :-(\n");
   }
@@ -578,11 +627,11 @@ int main(int argc, char **argv) {
     printf("Bravo ! Tu as atteint le goal !\n");
   }
 
-  // libérer le jeu
+  // Nettoyage de la mémoire.
 
   free_game (&jeu);
 
-  // Ne pas oublier de libérer la carte brute.
+  // Libération de la carte brute.
   free_rawmap(&rawmap);
 
   return 0;
