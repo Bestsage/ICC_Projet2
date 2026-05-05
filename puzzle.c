@@ -585,7 +585,7 @@ int main(int argc, char **argv) {
         // Si je tombe dans un trou, je reset.
         if (doit_reset) {
           reset(&jeu);
-	  //print_game(&jeu);
+	        //print_game(&jeu);
           // Je continue quand même avec les autres commandes de la ligne.
         }
 
