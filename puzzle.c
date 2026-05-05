@@ -528,12 +528,16 @@ void test_code(){
   // Nettoyage
   free_game(&g1); 
   free_rawmap(&r1);
+
   free_game(&g2); 
   free_rawmap(&r2);
+
   free_game(&g3); 
   free_rawmap(&r3);
+
   free_game(&g4); 
   free_rawmap(&r4);
+  
 }
 
 int main(int argc, char **argv) {
