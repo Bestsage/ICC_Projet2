@@ -195,12 +195,12 @@ typedef struct {
 // Types de cellules utilisés dans la grille.
 
 typedef enum {
-    CELL_SOL = 0,
-    CELL_BLOC_FIXE = 1,
-    CELL_BLOC_DEP = 2,
-    CELL_BLOC_UNE_FOIS = 3,
-    CELL_TROU = 4,
-    CELL_GOAL = 5,
+    CELL_SOL,
+    CELL_BLOC_FIXE,
+    CELL_BLOC_DEP,
+    CELL_BLOC_UNE_FOIS,
+    CELL_TROU,
+    CELL_GOAL,
 } cell_type_t;
 
 // Construction de l'état de jeu à partir d'une rawmap.
@@ -537,7 +537,7 @@ void test_code(){
 
   free_game(&g4); 
   free_rawmap(&r4);
-  
+
 }
 
 int main(int argc, char **argv) {
@@ -552,8 +552,8 @@ int main(int argc, char **argv) {
   // Tampon pour lire les commandes.
   char input[100]; // 100 input max 
 
-    bool game_on = true; // La boucle tourne tant que ça joue.
-    bool abandon = false; // Booléin d'abandon
+  bool game_on = true; // La boucle tourne tant que ça joue.
+  bool abandon = false; // Booléin d'abandon
 
   // Boucle principale avant victoire ou abandon.
 
