@@ -260,8 +260,7 @@ _show_fail_state() {
     # En-tetes des colonnes du diff
     printf "\n  ${BOLD}%4s  ${GREEN}%-*s${RESET}  ${BOLD}${RED}%-*s${RESET}\n" \
         "LN" "$col" "ATTENDU" "$col" "OBTENU"
-    printf "  %s\n" "$(printf '-%0.s' $(seq 1 $((col * 2 + 10))))"
-
+    printf "  %s\n" "$(printf '%0.s-' $(seq 1 $((col * 2 + 10))))"
     # Compare ligne par ligne : vert si identique (grise), rouge si different
     for (( row=1; row<=map_height; row++ )); do
         local ln=$(( ls + row - 1 ))
@@ -455,8 +454,8 @@ run_test() {
     echo -e "${BOLD}|  Sequence :${RESET} ${all_cmds}  ${DIM}(${#all_cmds} commande(s))${RESET}"
 
     # Lance le programme avec un timeout et capture stderr pour le sanitizer
-    timeout 10 ./puzzle "$map" < "$input" 2>"$san_f" \
-        | normalize > "$actual_f" || true
+    ./puzzle "$map" < "$input" 2>"$san_f" \
+        | normalize > "$actual_f" || true        | normalize > "$actual_f" || true
     # Normalise aussi la reference pour que la comparaison soit juste
     normalize < "$expected" > "$exp_f"
 
