@@ -35,17 +35,18 @@ MAX_STATES_SHOWN=3
 # ---------------------------------------------------------------------------
 # Detection automatique du dossier contenant les fichiers de carte (.txt)
 # On cherche d'abord "examples/", puis "maps/", et on le cree si absent.
+# Les chemins sont resolus par rapport au dossier du script lui-meme
+# (et non par rapport au repertoire courant) pour que le script fonctionne
+# quel que soit l'endroit depuis lequel il est appele.
 # ---------------------------------------------------------------------------
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -d "$SCRIPT_DIR/examples" ]; then MAPS_DIR="$SCRIPT_DIR/examples"
 
-if   [ -d "examples" ]; then MAPS_DIR="examples"
-elif [ -d "maps"     ]; then MAPS_DIR="maps"
+if   [ -d "$SCRIPT_DIR/examples" ]; then MAPS_DIR="$SCRIPT_DIR/examples"
+elif [ -d "$SCRIPT_DIR/maps"     ]; then MAPS_DIR="$SCRIPT_DIR/maps"
 else
     echo -e "${YELLOW}Aucun dossier 'examples/' ni 'maps/' trouve — creation de 'maps/'.${RESET}"
-    mkdir -p maps
-    MAPS_DIR="maps"
+    mkdir -p "$SCRIPT_DIR/maps"
+    MAPS_DIR="$SCRIPT_DIR/maps"
 fi
 
 # ---------------------------------------------------------------------------
@@ -211,8 +212,7 @@ _show_ctx_state() {
     local ls=$(( s * map_height + 1 ))
     local le=$(( ls + map_height - 1 ))
     local block
-    block=$(block_lines "$exp_f" "$ls" "
-    $le")
+    block=$(block_lines "$exp_f" "$ls" "$le")
 
     _state_header_dim "$s" "$all_cmds"
 
@@ -408,7 +408,7 @@ show_sanitizer() {
     | while IFS= read -r line; do
         local ln_num
         # Recupere le numero de ligne de puzzle.c s'il est present
-        ln_num=$(echo "$line" | grep -oP 'puzzle\.c:\K[0-9]+' || true)
+        ln_num=$(echo "$line" | sed -n 's/.*puzzle\.c:\([0-9]*\).*/\1/p' || true)
         if   [[ "$line" == SUMMARY* ]]; then
             # Ligne de resume : mise en evidence maximale
             echo -e "  ${RED}${BOLD}$line${RESET}"
