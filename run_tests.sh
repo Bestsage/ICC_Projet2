@@ -9,7 +9,7 @@
 
 # -e  : quitter immediatement en cas d'erreur non rattrapee
 # -u  : traiter les variables non definies comme une erreur
-# -o pipefail : un pipe echoue si l'une de ses commandes echoue
+# -o pipefail : un pipe echoue si l'une de ss variables non definies coes commandes echoue
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
@@ -36,6 +36,10 @@ MAX_STATES_SHOWN=3
 # Detection automatique du dossier contenant les fichiers de carte (.txt)
 # On cherche d'abord "examples/", puis "maps/", et on le cree si absent.
 # ---------------------------------------------------------------------------
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -d "$SCRIPT_DIR/examples" ]; then MAPS_DIR="$SCRIPT_DIR/examples"
+
 if   [ -d "examples" ]; then MAPS_DIR="examples"
 elif [ -d "maps"     ]; then MAPS_DIR="maps"
 else
@@ -207,7 +211,8 @@ _show_ctx_state() {
     local ls=$(( s * map_height + 1 ))
     local le=$(( ls + map_height - 1 ))
     local block
-    block=$(block_lines "$exp_f" "$ls" "$le")
+    block=$(block_lines "$exp_f" "$ls" "
+    $le")
 
     _state_header_dim "$s" "$all_cmds"
 
@@ -455,7 +460,7 @@ run_test() {
 
     # Lance le programme avec un timeout et capture stderr pour le sanitizer
     ./puzzle "$map" < "$input" 2>"$san_f" \
-        | normalize > "$actual_f" || true        | normalize > "$actual_f" || true
+        | normalize > "$actual_f" || true
     # Normalise aussi la reference pour que la comparaison soit juste
     normalize < "$expected" > "$exp_f"
 
