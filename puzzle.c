@@ -573,7 +573,7 @@ int main(int argc, char **argv) {
   bool game_on = true; 
   bool victoire = false; 
 
-  print_game(&jeu); // Premier affichage pour vérifier la carte.
+  print_game(&jeu); //affichage d'initialisation
 
   // si bix commence sur le goal on gagne direct
   if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
@@ -591,9 +591,9 @@ int main(int argc, char **argv) {
       char cmd = input[i];
 
       if(cmd == 'x'){
-        print_game(&jeu); // Dernier affichage avant abandon.
-        game_on = false; // Fin de la partie.
-        break; // Fin du traitement de la ligne.
+        print_game(&jeu);
+        game_on = false;
+        break;
       }
       else if (cmd == 'r'){
         reset(&jeu);
@@ -604,19 +604,18 @@ int main(int argc, char **argv) {
         
         bool doit_reset = false;
                 
-        // Application de la commande de déplacement.
+        // Application de la commande
         appliquer_commande(&jeu, cmd, &doit_reset);
 
-        // Si je tombe dans un trou, je reset.
         if (doit_reset) {
           reset(&jeu);
         }
 
-        // Affichage de l'état courant.
+        // Affichage de l'état après chaque moove
         print_game(&jeu);
 
         if (jeu.bix_x == jeu.goal_x && jeu.bix_y == jeu.goal_y) {
-          // Victoire détectée après l'affichage.
+          // detection de la victoire
           victoire = true;
           game_on = false;
           break;
